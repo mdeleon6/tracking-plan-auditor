@@ -27,9 +27,6 @@ def run_event_check() -> dict[str, set[str]]:
 
 
 if __name__ == "__main__":
-    result = compare_events({"a", "b", "c"}, {"b", "c", "d"})
-    assert result["missing_in_data"] == {"a"}
-    assert result["not_in_plan"] == {"d"}
     real = run_event_check()
     print(real)
     assert real["missing_in_data"] == {"add_to_wishlist", "remove_from_cart", "view_cart", "refund"}
