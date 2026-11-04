@@ -1,0 +1,14 @@
+# Secrets and credentials (never commit these)
+.env
+.streamlit/secrets.toml
+*credentials*.json
+*service-account*.json
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# Local data extracts
+data/raw/
