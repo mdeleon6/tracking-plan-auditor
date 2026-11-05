@@ -1,0 +1,4 @@
+event_name,field_name,location,type,required,status
+purchase,transaction_id,event_params,string,yes,active
+purchase,purchase_revenue,ecommerce,number,yes,active
+page_view,page_location,event_params,string,yes,active
