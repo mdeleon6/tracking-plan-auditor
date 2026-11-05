@@ -16,6 +16,18 @@ def find_deprecated_events(deprecated: set[str], observed: set[str]) -> set[str]
     return deprecated.intersection(observed)
 
 
+def audit_events(plan: pd.DataFrame, observed: set[str]) -> dict[str, set[str]]:
+    """Check observed events against the tracking plan."""
+    active = plan[plan["status"] == "active"]
+    planned_events = set(active["event_name"].tolist())
+    deprecated = plan[plan["status"] == "deprecated"]
+    deprecated_events = set(deprecated["event_name"].tolist())
+
+    results = compare_events(planned_events, observed - deprecated_events)
+    results["deprecated_still_firing"] = find_deprecated_events(deprecated_events, observed)
+    return results
+
+
 def run_event_check() -> dict[str, set[str]]:
     """Compare the tracking plan's active events with the events in BigQuery"""
     sql_path = Path(__file__).parent / "queries" / "01_event_counts.sql"
@@ -24,15 +36,9 @@ def run_event_check() -> dict[str, set[str]]:
 
     plan_path = Path(__file__).parent / "tracking_plan" / "events.csv"
     plan = pd.read_csv(plan_path)
-    active = plan[plan["status"] == "active"]
-    planned_events = set(active["event_name"].tolist())
-    deprecated = plan[plan["status"] == "deprecated"]
-    deprecated_events = set(deprecated["event_name"].tolist())
     observed_events = set(df["event_name"].tolist())
 
-    results = compare_events(planned_events, observed_events - deprecated_events)
-    results["deprecated_still_firing"] = find_deprecated_events(deprecated_events, observed_events)
-    return results
+    return audit_events(plan, observed_events)
 
 
 

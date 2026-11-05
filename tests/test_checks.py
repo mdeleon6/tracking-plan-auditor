@@ -1,4 +1,5 @@
-from checks import compare_events, find_deprecated_events
+from checks import compare_events, find_deprecated_events, audit_events
+import pandas as pd
 
 
 def test_finds_missing_and_unplanned_events():
@@ -33,3 +34,15 @@ def test_deprecated_event_stopped():
     observed = {"event3", "event4"}
     result = find_deprecated_events(deprecated, observed)
     assert result == set()
+    
+
+def test_deprecated_event_is_only_reported_once():
+    plan = pd.DataFrame({
+        "event_name": ["page_view", "old_event"],
+        "status": ["active", "deprecated"],
+    })
+    observed = {"page_view", "old_event"}
+    
+    result = audit_events(plan, observed)
+    assert result["deprecated_still_firing"] == {"old_event"}
+    assert result["not_in_plan"] == set()
