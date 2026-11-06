@@ -1,4 +1,4 @@
-from checks import compare_events, find_deprecated_events, audit_events
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps
 import pandas as pd
 
 
@@ -46,3 +46,19 @@ def test_deprecated_event_is_only_reported_once():
     result = audit_events(plan, observed)
     assert result["deprecated_still_firing"] == {"old_event"}
     assert result["not_in_plan"] == set()
+    
+    
+def test_field_gaps_finds_low_and_missing_fields():
+    required = pd.DataFrame({
+        "event_name": ["purchase", "purchase", "purchase"],
+        "field_name": ["value", "tax", "currency"],
+    })
+    coverage = pd.DataFrame({
+        "event_name": ["purchase", "purchase"],
+        "field_name": ["value", "tax"],
+        "coverage_rate": [1.0, 0.92],
+    })
+
+    gaps = find_field_gaps(required, coverage)
+
+    assert set(gaps["field_name"]) == {"tax", "currency"}

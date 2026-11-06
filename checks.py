@@ -16,6 +16,17 @@ def find_deprecated_events(deprecated: set[str], observed: set[str]) -> set[str]
     return deprecated.intersection(observed)
 
 
+def find_field_gaps(
+    required: pd.DataFrame,
+    coverage: pd.DataFrame,
+    min_coverage: float = 0.99,
+) -> pd.DataFrame:
+    """Return required fields whose coverage is below min_coverage."""
+    merged = required.merge(coverage, on=["event_name", "field_name"], how="left")
+    merged["coverage_rate"] = merged["coverage_rate"].fillna(0)
+    return merged[merged["coverage_rate"] < min_coverage]
+
+
 def audit_events(plan: pd.DataFrame, observed: set[str]) -> dict[str, set[str]]:
     """Check observed events against the tracking plan."""
     active = plan[plan["status"] == "active"]
