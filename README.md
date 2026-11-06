@@ -14,8 +14,9 @@ A feature can look like it failed, or a campaign can look like it worked, when t
 - `select_item`: only tracked from Nov 23, 2020, so earlier trends look like a fake spike
 - `purchase`: 7.9% of purchases have no `transaction_id`, rising to 82.3% from Jan 26–31, 2021 (cause not confirmed)
 - `shipping_tier`: missing on 26.9% of purchases. Not sent until Nov 20, 2020, then missing on 5.6%, rising to 82.3% on Jan 26–31 alongside `transaction_id` (cause not confirmed)
+- `add_to_cart`: no data on 18 of 92 days while purchases continued, and 90.7% of events list exactly 12 products, so the event alone doesn't show what was added (cause not confirmed)
 
-Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`](findings/002-purchase-missing-transaction-id.md), [`shipping_tier`](findings/003-purchase-missing-shipping-tier.md)
+Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`](findings/002-purchase-missing-transaction-id.md), [`shipping_tier`](findings/003-purchase-missing-shipping-tier.md), [`add_to_cart`](findings/004-add-to-cart-unreliable.md)
 
 ## Data
 [Google's public GA4 sample](https://developers.google.com/analytics/bigquery/web-ecommerce-demo-dataset) from the Google Merchandise Store (Nov 2020 – Jan 2021), the only large public GA4 export. Same format as any company's GA4 data today.
