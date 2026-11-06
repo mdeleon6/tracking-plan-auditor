@@ -1,0 +1,4 @@
+row,has_shipping_tier,has_transaction_id,purchases
+1,true,true,4115
+2,false,false,430
+3,false,true,41
