@@ -24,7 +24,7 @@ def find_field_gaps(
     """Return required fields whose coverage is below min_coverage."""
     merged = required.merge(coverage, on=["event_name", "field_name"], how="left")
     merged["coverage_rate"] = merged["coverage_rate"].fillna(0)
-    return merged[merged["coverage_rate"] < min_coverage]
+    return merged[merged["coverage_rate"] <min_coverage]
 
 
 def audit_events(plan: pd.DataFrame, observed: set[str]) -> dict[str, set[str]]:
@@ -52,6 +52,20 @@ def run_event_check() -> dict[str, set[str]]:
     return audit_events(plan, observed_events)
 
 
+def run_field_check() -> pd.DataFrame:
+    """Compare the field plan with field coverage in BigQuery."""
+    sql_path = Path(__file__).parent / "queries" / "07_field_coverage.sql"
+    coverage = run_query(load_sql(sql_path))
+    plan_path = Path(__file__).parent / "tracking_plan" / "event_fields.csv"
+    plan = pd.read_csv(plan_path)
+    required = plan[
+        (plan["required"] == "yes")
+        & (plan["location"] == "event_params")
+        & (plan["status"] == "active")
+    ][["event_name", "field_name"]]
+
+    return find_field_gaps(required, coverage)
+
 
 if __name__ == "__main__":
     real = run_event_check()
@@ -59,3 +73,7 @@ if __name__ == "__main__":
     assert real["missing_in_data"] == {"add_to_wishlist", "remove_from_cart", "view_cart", "refund"}
     assert real["not_in_plan"] == {"add_shipping_info"}
     assert real["deprecated_still_firing"] == set()
+    
+    
+    gaps = run_field_check()
+    print(gaps)
