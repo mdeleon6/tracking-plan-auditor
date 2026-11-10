@@ -28,12 +28,14 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday (expect some false alarms around holidays)
 
-
 **Planned**
 - Extend field checks to `items` and `ecommerce` fields, and check data types
 - Spot unusual volume drops, comparing like with like (Saturdays with Saturdays)
 - AI explains each issue and drafts the ticket
-- Measured on planted bugs: how many it catches vs. false alarms
+- Extend planted bugs testing to the field checks
+
+## How well it works
+Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The low-volume check caught every drop of 70% or more, 2 of 9 at 55%, and none at 40% or below. Small test; low-volume events are noisier.
 
 ## Repo layout
 - `queries/`: the SQL from the manual investigation
