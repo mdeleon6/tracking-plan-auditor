@@ -27,12 +27,12 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Checks that required `event_params`, `items` and `ecommerce` fields are present on at least 99% of their events or products
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday (expect some false alarms around holidays)
-- Groups field gaps into problems and drafts a ticket for each with Claude, which must label any possible cause as unconfirmed and cannot calculate numbers
-- Flags any number in a draft that isn't in the check results
+- Turns field gaps and missing days into problem descriptions and drafts a ticket for each with Claude, which must label any possible cause as unconfirmed and cannot calculate numbers
+- Flags any number in a draft that isn't in the check results. It can't tell if a number is used in the wrong place, so a person reviews every draft and sets the final severity
 
 **Planned**
 - Check data types
-- Draft tickets for missing days and low-volume results too
+- Draft tickets for low-volume results too
 - Extend planted bugs testing to the field checks
 
 ## How well it works

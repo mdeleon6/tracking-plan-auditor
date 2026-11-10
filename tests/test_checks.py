@@ -1,5 +1,5 @@
 from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days
-from ai_tickets import describe_field_gaps, find_unsupported_numbers
+from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days
 import pandas as pd
 
 
@@ -111,3 +111,47 @@ def test_flags_numbers_not_in_the_input():
     ticket = "Coverage is 92.1, which is 7.5 below 99."
 
     assert find_unsupported_numbers(ticket, problem) == {"7.5"}
+
+
+def test_groups_consecutive_dates_into_stretches():
+    dates = {"20201231", "20210101", "20210105"}
+
+    result = group_consecutive_dates(dates)
+
+    assert result == [
+        (pd.Timestamp("2020-12-31"), pd.Timestamp("2021-01-01")),
+        (pd.Timestamp("2021-01-05"), pd.Timestamp("2021-01-05")),
+    ]
+
+
+def test_describes_missing_days_with_counts_and_stretches():
+    daily = pd.DataFrame({
+        "event_date": ["20201101", "20201102", "20201103", "20201104"],
+        "event_name": ["purchase", "purchase", "purchase", "purchase"],
+        "event_count": [5, 5, 5, 5],
+    })
+    missing = {"add_to_cart": {"20201102", "20201103"}}
+
+    problems = describe_missing_days(missing, daily)
+
+    assert len(problems) == 1
+    assert "Days with no data for this event: 2 of 4." in problems[0]
+    assert "- Nov 2, 2020 to Nov 3, 2020" in problems[0]
+    assert "Events with data on every day of the period: purchase." in problems[0]
+
+
+def test_describes_dates_shared_with_other_events():
+    daily = pd.DataFrame({
+        "event_date": ["20201101", "20201102", "20201103", "20201104"],
+        "event_name": ["purchase", "purchase", "purchase", "purchase"],
+        "event_count": [5, 5, 5, 5],
+    })
+    missing = {
+        "add_to_cart": {"20201102", "20201103"},
+        "select_item": {"20201103", "20201104"},
+    }
+
+    problems = describe_missing_days(missing, daily)
+
+    assert "select_item also has no data on 1 of these days: Nov 3, 2020." in problems[0]
+    assert "add_to_cart also has" not in problems[0]
