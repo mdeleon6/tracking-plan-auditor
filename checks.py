@@ -91,7 +91,7 @@ def run_field_check() -> pd.DataFrame:
         (plan["required"] == "yes")
         & (plan["location"].isin(["event_params", "items", "ecommerce"]))
         & (plan["status"] == "active")
-    ][["event_name", "field_name"]]
+    ][["event_name", "field_name","location"]]
 
     return find_field_gaps(required, coverage)
 
@@ -110,19 +110,20 @@ def run_low_day_check() -> pd.DataFrame:
     return find_low_days(daily)
 
 
+def run_all_checks() -> dict:
+    """Run every check and return the results together."""
+    return {
+        "events": run_event_check(),
+        "field_gaps": run_field_check(),
+        "missing_days": run_volume_check(),
+        "low_days": run_low_day_check(),
+    }
+
+
 if __name__ == "__main__":
-    real = run_event_check()
-    print(real)
-    assert real["missing_in_data"] == {"add_to_wishlist", "remove_from_cart", "view_cart", "refund"}
-    assert real["not_in_plan"] == {"add_shipping_info"}
-    assert real["deprecated_still_firing"] == set()
-    
-    
-    gaps = run_field_check()
-    print(gaps)
-    missing_days = run_volume_check()
-    for event_name, days in missing_days.items():
-        print(event_name, len(days), sorted(days))
-    low = run_low_day_check()
-    print(low.groupby("event_name").size())
-    print(low[low["event_name"] == "add_to_cart"].to_string())
+    results = run_all_checks()
+    print(results["events"])
+    print(results["field_gaps"].to_string())
+    print({event: len(days) for event, days in results["missing_days"].items()})
+    print(len(results["low_days"]))
+

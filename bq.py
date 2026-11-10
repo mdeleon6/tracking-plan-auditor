@@ -16,7 +16,7 @@ def run_query(sql: str) -> pd.DataFrame:
     client = bigquery.Client(project=PROJECT_ID)
     query_job = client.query(sql)
     results = query_job.result()
-    return results.to_dataframe()
+    return results.to_dataframe(create_bqstorage_client=False)
 
 
 if __name__ == "__main__":
