@@ -39,6 +39,17 @@ def find_missing_days(daily: pd.DataFrame) -> dict[str, set[str]]:
     return missing
 
 
+def find_low_days(daily: pd.DataFrame, min_ratio: float = 0.5) -> pd.DataFrame:
+    """Return days where an event was far below its typical count for that weekday."""
+    result = daily.copy()
+    dates = pd.to_datetime(result["event_date"], format="%Y%m%d")
+    result["weekday"] = dates.dt.day_name()
+    result["typical"] = result.groupby(["weekday", "event_name"])["event_count"].transform("median")
+    result["ratio"] = result["event_count"] / result["typical"]
+    return result[result["ratio"] < min_ratio]
+
+
+
 def audit_events(plan: pd.DataFrame, observed: set[str]) -> dict[str, set[str]]:
     """Check observed events against the tracking plan."""
     active = plan[plan["status"] == "active"]
@@ -86,6 +97,13 @@ def run_volume_check() -> dict[str, set[str]]:
     return find_missing_days(daily)
 
 
+def run_low_day_check() -> pd.DataFrame:
+    """Find days each event was far below its typical weekday count in BigQuery."""
+    sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
+    daily = run_query(load_sql(sql_path))
+    return find_low_days(daily)
+
+
 if __name__ == "__main__":
     real = run_event_check()
     print(real)
@@ -99,3 +117,6 @@ if __name__ == "__main__":
     missing_days = run_volume_check()
     for event_name, days in missing_days.items():
         print(event_name, len(days), sorted(days))
+    low = run_low_day_check()
+    print(low.groupby("event_name").size())
+    print(low[low["event_name"] == "add_to_cart"].to_string())

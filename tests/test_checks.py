@@ -1,4 +1,4 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days
 import pandas as pd
 
 
@@ -74,3 +74,18 @@ def test_finds_days_an_event_is_missing():
     result = find_missing_days(daily)
 
     assert result == {"add_to_cart": {"20201102"}}
+    
+
+def test_finds_low_days_compared_with_same_weekday():
+    daily = pd.DataFrame({
+        "event_date": [
+            "20201101", "20201108", "20201115", "20201122", "20201129",
+            "20201102", "20201109", "20201116",
+        ],
+        "event_name": ["page_view"] * 8,
+        "event_count": [100, 110, 10, 105, 95, 30, 32, 28],
+    })
+
+    low = find_low_days(daily)
+
+    assert set(low["event_date"]) == {"20201115"}
