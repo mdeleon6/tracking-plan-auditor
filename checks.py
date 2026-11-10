@@ -77,13 +77,14 @@ def run_event_check() -> dict[str, set[str]]:
 
 def run_field_check() -> pd.DataFrame:
     """Compare the field plan with field coverage in BigQuery."""
-    sql_path = Path(__file__).parent / "queries" / "07_field_coverage.sql"
-    coverage = run_query(load_sql(sql_path))
+    params_sql = Path(__file__).parent / "queries" / "07_field_coverage.sql"
+    items_sql = Path(__file__).parent / "queries" / "17_items_field_coverage.sql"
+    coverage = pd.concat([run_query(load_sql(params_sql)), run_query(load_sql(items_sql))])
     plan_path = Path(__file__).parent / "tracking_plan" / "event_fields.csv"
     plan = pd.read_csv(plan_path)
     required = plan[
         (plan["required"] == "yes")
-        & (plan["location"] == "event_params")
+        & (plan["location"].isin(["event_params", "items"]))
         & (plan["status"] == "active")
     ][["event_name", "field_name"]]
 

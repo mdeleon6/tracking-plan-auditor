@@ -24,12 +24,12 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 ## How it works
 **Working now**
 - Compares the tracking plan with the data: planned events that never arrive, events missing from the plan, and deprecated events still being sent
-- Checks that required `event_params` fields are present on at least 99% of their events
+- Checks that required `event_params` and `items` fields are present on at least 99% of their events or products
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday (expect some false alarms around holidays)
 
 **Planned**
-- Extend field checks to `items` and `ecommerce` fields, and check data types
+- Extend field checks to `ecommerce` fields, and check data types
 - Spot unusual volume drops, comparing like with like (Saturdays with Saturdays)
 - AI explains each issue and drafts the ticket
 - Extend planted bugs testing to the field checks
