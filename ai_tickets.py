@@ -1,6 +1,8 @@
 from pathlib import  Path
 import anthropic
-
+import pandas as pd
+from checks import run_field_check
+import re
 
 SYSTEM_PROMPT = """
 You write data quality tickets from the results of automated tracking checks. The checks have already run and detected the problem. You do not run anything and you cannot see the underlying data, so you only know what is in the input.
@@ -52,16 +54,42 @@ def draft_ticket(problem: str) -> str:
     return next(block.text for block in response.content if block.type == "text")
 
 
+def describe_field_gaps(gaps: pd.DataFrame, min_coverage: float = 0.99) -> list[str]:
+    """Group field gaps into problem descriptions, one per event and coverage rate."""
+    problems = []
+    for (event_name, rate), rows in gaps.groupby(["event_name", "coverage_rate"]):
+        missing = round((1 - rate) * 100, 4)
+        gap = round((min_coverage - rate) * 100, 4)
+        lines = [
+            f"Check: required field coverage. A field is flagged when coverage is below {min_coverage}.",
+            f"Event: {event_name}",
+            f"Share of events or products missing each field: {missing}%. Gap to threshold: {gap} percentage points.",
+            f"Flagged fields, all with coverage_rate {round(rate, 6)}:",
+        ]
+        for _, row in rows.iterrows():
+            unit = "product" if row["location"] == "items" else "event"
+            lines.append(f"- {row['field_name']} (location: {row['location']}, measured per {unit})")
+        problems.append("\n".join(lines))
+    return problems
+
+
+def find_unsupported_numbers(ticket: str, problem: str) -> set[str]:
+    """Return numbers in the ticket that do not appear in the problem text."""
+    pattern = r"\d+(?:\.\d+)?"
+    ticket_numbers = set(re.findall(pattern, ticket))
+    problem_numbers = set(re.findall(pattern, problem))
+    return ticket_numbers - problem_numbers
+
+
 if __name__ == "__main__":
-    problem = """
-Check: required field coverage. A field is flagged when coverage is below 0.99.
-Event: purchase
-Share of purchase events missing each field: 7.9058%. Gap to threshold: 6.9058 percentage points.
-Flagged fields, all with coverage_rate 0.920942:
-- transaction_id (location: event_params)
-- value (location: event_params)
-- purchase_revenue (location: ecommerce)
-- tax (location: event_params)
-- payment_type (location: event_params)
-"""
-    print(draft_ticket(problem))
+    gaps = run_field_check()
+    problems = describe_field_gaps(gaps)
+    output_folder = Path(__file__).parent / "ai_drafts"
+    output_folder.mkdir(exist_ok=True)
+
+    for number, problem in enumerate(problems, start=1):
+        if "shipping_tier" in problem:
+            continue
+        ticket = draft_ticket(problem)
+        (output_folder / f"draft_{number}.md").write_text(ticket, encoding="utf-8")
+        print(number, find_unsupported_numbers(ticket, problem))

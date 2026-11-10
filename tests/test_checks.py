@@ -1,4 +1,5 @@
 from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days
+from ai_tickets import describe_field_gaps, find_unsupported_numbers
 import pandas as pd
 
 
@@ -89,3 +90,24 @@ def test_finds_low_days_compared_with_same_weekday():
     low = find_low_days(daily)
 
     assert set(low["event_date"]) == {"20201115"}
+    
+    
+def test_groups_fields_with_same_event_and_rate():
+    gaps = pd.DataFrame({
+        "event_name": ["purchase", "purchase", "purchase"],
+        "field_name": ["value", "tax", "shipping_tier"],
+        "location": ["event_params", "event_params", "event_params"],
+        "coverage_rate": [0.92, 0.92, 0.73],
+    })
+
+    problems = describe_field_gaps(gaps)
+
+    assert len(problems) == 2
+    assert any("Gap to threshold: 7.0 percentage points" in p for p in problems)
+
+
+def test_flags_numbers_not_in_the_input():
+    problem = "Coverage is 92.1 and the threshold is 99."
+    ticket = "Coverage is 92.1, which is 7.5 below 99."
+
+    assert find_unsupported_numbers(ticket, problem) == {"7.5"}

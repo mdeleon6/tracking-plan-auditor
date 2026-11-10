@@ -2,7 +2,7 @@
 
 Catches broken analytics tracking before it reaches dashboards.
 
-**Status:** In progress. Manual audit complete; first automated checks working, with more in development.
+**Status:** In progress. Manual audit complete; automated checks and AI ticket drafting working. UI and support for other data layouts planned.
 
 ## The problem
 When tracking is broken, incorrect data can be presented or unnecessary time can be spent on cleaning the data. The breaking of tracking happens silently, unless you are looking into it you may never see the issue. Through experience I have witnessed this myself, where until an audit was done the extent of how broken the tracking was would never have been realized. 
@@ -27,19 +27,19 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Checks that required `event_params`, `items` and `ecommerce` fields are present on at least 99% of their events or products
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday (expect some false alarms around holidays)
-- Drafts a ticket from a detected problem using Claude, which explains the issue but may not state causes or calculate numbers (tested by hand so far)
+- Groups field gaps into problems and drafts a ticket for each with Claude, which must label any possible cause as unconfirmed and cannot calculate numbers
+- Flags any number in a draft that isn't in the check results
 
 **Planned**
 - Check data types
-- Spot unusual volume drops, comparing like with like (Saturdays with Saturdays)
-- Build AI ticket input automatically from the check results
+- Draft tickets for missing days and low-volume results too
 - Extend planted bugs testing to the field checks
 
 ## How well it works
 Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The low-volume check caught every drop of 70% or more, 2 of 9 at 55%, and none at 40% or below. Small test; low-volume events are noisier.
 
 ## Repo layout
-- `queries/`: the SQL from the manual investigation
+- `queries/`: the SQL for the investigation and the automated checks
 - `findings/`: audit tickets and supporting results
 - `tracking_plan/`: the plan the data is checked against
 - `bq.py`: runs SQL files in BigQuery from Python
@@ -47,6 +47,7 @@ Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The
 - `tests/`: pytest unit tests
 - `planted_bugs.py`: tests the checks against bugs planted on purpose
 - `ai_tickets.py`: drafts tickets from detected problems with Claude
+- `ai_drafts/`: sample tickets drafted by Claude from real check results
 
 ## Tech
-SQL (BigQuery), GA4, Python (pandas), pytest, Claude API 
+SQL (BigQuery), GA4, Python (pandas), pytest, Claude API
