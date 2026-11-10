@@ -1,4 +1,4 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days
 import pandas as pd
 
 
@@ -62,3 +62,15 @@ def test_field_gaps_finds_low_and_missing_fields():
     gaps = find_field_gaps(required, coverage)
 
     assert set(gaps["field_name"]) == {"tax", "currency"}
+
+
+def test_finds_days_an_event_is_missing():
+    daily = pd.DataFrame({
+        "event_date": ["20201101", "20201102", "20201103", "20201101", "20201103"],
+        "event_name": ["page_view", "page_view", "page_view", "add_to_cart", "add_to_cart"],
+        "event_count": [100, 120, 90, 10, 8],
+    })
+
+    result = find_missing_days(daily)
+
+    assert result == {"add_to_cart": {"20201102"}}

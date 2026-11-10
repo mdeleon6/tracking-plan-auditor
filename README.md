@@ -25,6 +25,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 **Working now**
 - Compares the tracking plan with the data: planned events that never arrive, events missing from the plan, and deprecated events still being sent
 - Checks that required `event_params` fields are present on at least 99% of their events
+- Finds the days an event stopped arriving entirely
 
 **Planned**
 - Extend field checks to `items` and `ecommerce` fields, and check data types

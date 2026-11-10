@@ -27,6 +27,18 @@ def find_field_gaps(
     return merged[merged["coverage_rate"] <min_coverage]
 
 
+def find_missing_days(daily: pd.DataFrame) -> dict[str, set[str]]:
+    """Return the dates each event did not appear on."""
+    all_dates = set(daily["event_date"].tolist())
+    missing = {}
+    for event_name, rows in daily.groupby("event_name"):
+        event_dates = set(rows["event_date"].tolist())
+        gaps = all_dates - event_dates
+        if gaps:
+            missing[event_name] = gaps
+    return missing
+
+
 def audit_events(plan: pd.DataFrame, observed: set[str]) -> dict[str, set[str]]:
     """Check observed events against the tracking plan."""
     active = plan[plan["status"] == "active"]
@@ -67,6 +79,13 @@ def run_field_check() -> pd.DataFrame:
     return find_field_gaps(required, coverage)
 
 
+def run_volume_check() -> dict[str, set[str]]:
+    """Find the days each event did not appear on in BigQuery."""
+    sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
+    daily = run_query(load_sql(sql_path))
+    return find_missing_days(daily)
+
+
 if __name__ == "__main__":
     real = run_event_check()
     print(real)
@@ -77,3 +96,6 @@ if __name__ == "__main__":
     
     gaps = run_field_check()
     print(gaps)
+    missing_days = run_volume_check()
+    for event_name, days in missing_days.items():
+        print(event_name, len(days), sorted(days))
