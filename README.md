@@ -27,11 +27,12 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Checks that required `event_params`, `items` and `ecommerce` fields are present on at least 99% of their events or products
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday (expect some false alarms around holidays)
+- Drafts a ticket from a detected problem using Claude, which explains the issue but may not state causes or calculate numbers (tested by hand so far)
 
 **Planned**
 - Check data types
 - Spot unusual volume drops, comparing like with like (Saturdays with Saturdays)
-- AI explains each issue and drafts the ticket
+- Build AI ticket input automatically from the check results
 - Extend planted bugs testing to the field checks
 
 ## How well it works
@@ -44,6 +45,8 @@ Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The
 - `bq.py`: runs SQL files in BigQuery from Python
 - `checks.py`: the automated checks
 - `tests/`: pytest unit tests
+- `planted_bugs.py`: tests the checks against bugs planted on purpose
+- `ai_tickets.py`: drafts tickets from detected problems with Claude
 
 ## Tech
-SQL (BigQuery), GA4, Python (pandas), pytest, Claude API (planned)
+SQL (BigQuery), GA4, Python (pandas), pytest, Claude API 
