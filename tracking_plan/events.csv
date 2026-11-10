@@ -15,6 +15,7 @@ remove_from_cart,ecommerce,when the user removes an item from their cart,active,
 view_cart,ecommerce,when the user views their cart,active,medium
 begin_checkout,ecommerce,when the user begins the checkout process,active,high
 add_payment_info,ecommerce,when the user adds payment information,active,high
+add_shipping_info,ecommerce,when the user adds shipping information,active,high
 purchase,ecommerce,when the user makes a purchase,active,high
 refund,ecommerce,when the user receives a refund,active,high
 view_promotion,ecommerce,when the user views a promotion,active,low

@@ -3,7 +3,7 @@ import anthropic
 import pandas as pd
 import re
 from bq import load_sql, run_query
-from checks import find_missing_days, run_field_check
+from checks import find_low_days, find_missing_days, run_field_check
 
 
 SYSTEM_PROMPT = """
@@ -22,7 +22,7 @@ Do not invent queries, code, file names, links or people.
 Choose severity by what the problem breaks, and give your reason in the Impact section:
 - High: totals or key business numbers cannot be trusted, such as revenue, orders or conversion rates.
 - Medium: one type of breakdown or analysis is affected, while totals are still correct.
-- Low: little effect on any decision. If the check results give a severity set by the tracking plan, use exactly that severity and explain in Impact what it affects. Do not change it or suggest changing it. If it says Not rated, write Not rated.
+- Low: little effect on any decision. If the check results give a severity set by the tracking plan, use exactly that severity and explain in Impact what it affects. Do not change it or suggest changing it. If it says Not rated, write Not rated. For low-volume problems, the tracking plan rating applies only if an event stops arriving entirely. Treat it as the highest severity allowed, choose the severity with the rules above, and never go higher.
 
 You will be given an example ticket inside <example_ticket> tags. Copy its sections, order and tone only. Never reuse its events, dates, numbers or references to past experience. Leave "Found by" and "Date found" blank for a person to fill in. Do not carry over any possible cause, impact, next step or acceptance criterion from the example. Do not reuse the example's wording or the questions it asks.
 
@@ -154,6 +154,83 @@ def find_unsupported_numbers(ticket: str, problem: str) -> set[str]:
     return ticket_numbers - problem_numbers
 
 
+def split_low_days(low: pd.DataFrame, min_events: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Separate days when many events dropped together from drops on just a few events."""
+    events_per_day = low.groupby("event_date")["event_name"].transform("nunique")
+    together = low[events_per_day >= min_events]
+    separate = low[events_per_day < min_events]
+    return together, separate
+
+def describe_low_days_by_event(
+    separate: pd.DataFrame,
+    together: pd.DataFrame,
+    missing: dict[str, set[str]],
+    severities: dict[str, str],
+    min_ratio: float = 0.5,
+) -> list[str]:
+    """Write one problem description per event with low days."""
+    problems = []
+    for event_name, rows in separate.groupby("event_name"):
+        rating = severities.get(event_name, "not rated").capitalize()
+        lines = [
+            f"Check: low volume. A day is flagged when an event's count is below {min_ratio} of its typical count, meaning the median for that weekday.",
+            f"Event: {event_name}",
+            f"Tracking plan rating if this event stopped arriving entirely: {rating}.",
+            f"Number of flagged days: {len(rows)}.",
+            "Flagged days:",
+        ]
+        for _, row in rows.sort_values("event_date").iterrows():
+            day = pd.to_datetime(row["event_date"], format="%Y%m%d")
+            percent = round(row["ratio"] * 100, 1)
+            lines.append(f"- {format_day(day)}: {row['event_count']} events, typical {row['typical']:g}, {percent}% of typical")
+        
+        grouped_days = sorted(together[together["event_name"] == event_name]["event_date"])
+        if grouped_days:
+            days = ", ".join(format_day(pd.to_datetime(d, format="%Y%m%d")) for d in grouped_days)
+            lines.append(
+                f"This event was also below threshold on {len(grouped_days)} more days when many events dropped together. "
+                f"Those days are covered in a separate multi-event ticket: {days}."
+            )
+
+        if event_name in missing:
+            stretches = group_consecutive_dates(missing[event_name])
+            dates = "; ".join(format_stretch(start, end) for start, end in stretches)
+            lines.append(f"This event also has days with no data at all: {dates}.")
+
+        problems.append("\n".join(lines))
+    return problems
+
+
+def describe_low_days_together(
+    together: pd.DataFrame,
+    severities: dict[str, str],
+    min_events: int = 5,
+    min_ratio: float = 0.5,
+) -> list[str]:
+    """Write one problem description for days when many events dropped together."""
+    if together.empty:
+        return []
+
+    events = sorted(together["event_name"].unique())
+    high_events = [event for event in events if severities.get(event) == "high"]
+    lines = [
+        f"Check: low volume across many events. A day is listed when at least {min_events} events are each below {min_ratio} of their typical count, meaning the median for that weekday.",
+        "Event: multiple events",
+        f"Days listed: {together['event_date'].nunique()}. Different events affected: {len(events)}.",
+        f"Affected events rated High in the tracking plan if they stopped arriving entirely: {', '.join(high_events) or 'none'}.",
+        "Days listed, with each affected event's count as a percentage of its typical count:",
+    ]
+    for event_date, rows in together.groupby("event_date"):
+        day = pd.to_datetime(event_date, format="%Y%m%d")
+        drops = ", ".join(
+            f"{row['event_name']} {round(row['ratio'] * 100, 1)}%"
+            for _, row in rows.sort_values("event_name").iterrows()
+        )
+        lines.append(f"- {format_day(day)}: {len(rows)} events below threshold: {drops}")
+
+    return ["\n".join(lines)]
+
+
 def draft_field_gap_tickets() -> None:
     gaps = run_field_check()
     problems = describe_field_gaps(gaps)
@@ -191,5 +268,23 @@ def draft_missing_day_tickets() -> None:
         print(number, find_unsupported_numbers(ticket, problem))
 
 
+def draft_low_day_tickets() -> None:
+    sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
+    daily = run_query(load_sql(sql_path))
+    severities = load_event_severities()
+    together, separate = split_low_days(find_low_days(daily))
+    problems = (
+        describe_low_days_together(together, severities)
+        + describe_low_days_by_event(separate, together, find_missing_days(daily), severities)
+    )
+    output_folder = Path(__file__).parent / "ai_drafts"
+    output_folder.mkdir(exist_ok=True)
+
+    for number, problem in enumerate(problems, start=1):
+        ticket = draft_ticket(problem)
+        (output_folder / f"draft_low_days_{number}.md").write_text(ticket, encoding="utf-8")
+        print(number, find_unsupported_numbers(ticket, problem))
+
+
 if __name__ == "__main__":
-    draft_missing_day_tickets()
+    draft_low_day_tickets()
