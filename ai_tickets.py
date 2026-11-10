@@ -22,7 +22,7 @@ Do not invent queries, code, file names, links or people.
 Choose severity by what the problem breaks, and give your reason in the Impact section:
 - High: totals or key business numbers cannot be trusted, such as revenue, orders or conversion rates.
 - Medium: one type of breakdown or analysis is affected, while totals are still correct.
-- Low: little effect on any decision.
+- Low: little effect on any decision. If the check results give a severity set by the tracking plan, use exactly that severity and explain in Impact what it affects. Do not change it or suggest changing it. If it says Not rated, write Not rated.
 
 You will be given an example ticket inside <example_ticket> tags. Copy its sections, order and tone only. Never reuse its events, dates, numbers or references to past experience. Leave "Found by" and "Date found" blank for a person to fill in. Do not carry over any possible cause, impact, next step or acceptance criterion from the example. Do not reuse the example's wording or the questions it asks.
 
@@ -85,7 +85,7 @@ def format_stretch(start: pd.Timestamp, end: pd.Timestamp) -> str:
     return f"{format_day(start)} to {format_day(end)}"
 
 
-def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame) -> list[str]:
+def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, severities: dict[str, str]) -> list[str]:
     """Write one problem description per event that has days with no data."""
     days = pd.to_datetime(daily["event_date"], format="%Y%m%d")
     period = format_stretch(days.min(), days.max())
@@ -96,6 +96,7 @@ def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame) -> 
 
     problems = []
     for event_name, gaps in missing.items():
+        severity = severities.get(event_name, "not rated").capitalize()
         event_rows = daily[daily["event_name"] == event_name]
         total_events = event_rows["event_count"].astype(int).sum()
         days_with_data = total_days - len(gaps)
@@ -103,6 +104,7 @@ def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame) -> 
         lines = [
             "Check: missing days. An event is flagged for any day in the data period when it has no rows.",
             f"Event: {event_name}",
+            f"Severity set by the tracking plan: {severity}.",
             f"Data period: {period} ({total_days} days).",
             f"Total events received on the {days_with_data} days with data: {total_events}.",
             f"Days with no data for this event: {len(gaps)} of {total_days}.",
@@ -166,11 +168,20 @@ def draft_field_gap_tickets() -> None:
         print(number, find_unsupported_numbers(ticket, problem))
 
 
+def load_event_severities() -> dict[str, str]:
+    """Read each event's severity_if_missing rating from the tracking plan."""
+    plan_path = Path(__file__).parent / "tracking_plan" / "events.csv"
+    plan = pd.read_csv(plan_path)
+    rated = plan.dropna(subset=["severity_if_missing"])
+    return dict(zip(rated["event_name"], rated["severity_if_missing"]))
+
+
 def draft_missing_day_tickets() -> None:
     sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
     daily = run_query(load_sql(sql_path))
     missing = find_missing_days(daily)
-    problems = describe_missing_days(missing, daily)
+    severities = load_event_severities()
+    problems = describe_missing_days(missing, daily, severities)
     output_folder = Path(__file__).parent / "ai_drafts"
     output_folder.mkdir(exist_ok=True)
 

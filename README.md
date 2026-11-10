@@ -28,12 +28,14 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday (expect some false alarms around holidays)
 - Turns field gaps and missing days into problem descriptions and drafts a ticket for each with Claude, which must label any possible cause as unconfirmed and cannot calculate numbers
-- Flags any number in a draft that isn't in the check results. It can't tell if a number is used in the wrong place, so a person reviews every draft and sets the final severity
+- Flags any number in a draft that isn't in the check results. It can't tell if a number is used in the wrong place, so a person reviews every draft
+- Takes the severity of each missing-day ticket from the tracking plan, where the plan owner rates how serious it is if that event stops arriving
 
 **Planned**
 - Check data types
 - Draft tickets for low-volume results too
 - Extend planted bugs testing to the field checks
+- Set field-gap severity from the tracking plan too
 
 ## How well it works
 Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The low-volume check caught every drop of 70% or more, 2 of 9 at 55%, and none at 40% or below. Small test; low-volume events are noisier.

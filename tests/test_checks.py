@@ -132,12 +132,13 @@ def test_describes_missing_days_with_counts_and_stretches():
     })
     missing = {"add_to_cart": {"20201102", "20201103"}}
 
-    problems = describe_missing_days(missing, daily)
+    problems = describe_missing_days(missing, daily, {"add_to_cart": "high"})
 
     assert len(problems) == 1
     assert "Days with no data for this event: 2 of 4." in problems[0]
     assert "- Nov 2, 2020 to Nov 3, 2020" in problems[0]
     assert "Events with data on every day of the period: purchase." in problems[0]
+    assert "Severity set by the tracking plan: High." in problems[0]
 
 
 def test_describes_dates_shared_with_other_events():
@@ -151,7 +152,8 @@ def test_describes_dates_shared_with_other_events():
         "select_item": {"20201103", "20201104"},
     }
 
-    problems = describe_missing_days(missing, daily)
+    problems = describe_missing_days(missing, daily, {})
 
     assert "select_item also has no data on 1 of these days: Nov 3, 2020." in problems[0]
     assert "add_to_cart also has" not in problems[0]
+    assert "Severity set by the tracking plan: Not rated." in problems[0]

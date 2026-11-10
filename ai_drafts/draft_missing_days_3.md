@@ -1,22 +1,21 @@
 # view_item_list has no data on 59 of 92 days from Nov 1 2020 to Jan 31 2021
 
 **Event:** view_item_list
-**Found by:** · **Date found:** · **Severity:** Medium
+**Found by:** · **Date found:** · **Severity:** High
 
 ## Description
 The `view_item_list` event has no rows on 59 of the 92 days between Nov 1, 2020 and Jan 31, 2021. On the 33 days that do have data, only 71 `view_item_list` events were received in total.
 
-The dataset was not empty on these days. At least one other event was received on every one of the 59 days. Fourteen other events have data on every day of the period, including `view_item`, `page_view`, `session_start` and `purchase`.
+Other events were received on every one of the 59 days. Fourteen events have data on every day of the period, including `view_item`, `purchase` and `page_view`. This means the data feed was not empty on those days. However, the check results do not show why `view_item_list` has no rows. They also do not show whether item lists were actually viewed on those days.
 
-Two other events, `add_to_cart` and `select_item`, also have no data on some of the same days. This overlap does not show that the gaps share a cause.
-
-The check results show only what was received. They cannot tell us whether people viewed item lists on the 59 days with no data.
+Two other events also have no data on some of the same days. `add_to_cart` has no data on 4 of them, and `select_item` has no data on 6 of them. Each of these events also has gaps on other days. These overlaps do not show that the gaps share a cause.
 
 ## Evidence (Nov 1, 2020 – Jan 31, 2021)
+- Data period: 92 days.
 - `view_item_list` has no data on 59 of 92 days.
-- `view_item_list` has 71 events in total across the 33 days with data.
-- On every day with no `view_item_list` data, at least one other event was received.
-- These events have data on every day of the period: `add_payment_info`, `add_shipping_info`, `begin_checkout`, `click`, `first_visit`, `page_view`, `purchase`, `scroll`, `select_promotion`, `session_start`, `user_engagement`, `view_item`, `view_promotion`, `view_search_results`.
+- 71 `view_item_list` events were received in total, across the 33 days with data.
+- At least one other event was received on every day that has no `view_item_list` data.
+- Events with data on every day of the period: `add_payment_info`, `add_shipping_info`, `begin_checkout`, `click`, `first_visit`, `page_view`, `purchase`, `scroll`, `select_promotion`, `session_start`, `user_engagement`, `view_item`, `view_promotion`, `view_search_results`.
 - Dates with no `view_item_list` data:
   - Nov 12, 2020 to Nov 14, 2020
   - Nov 16, 2020 to Nov 17, 2020
@@ -32,33 +31,38 @@ The check results show only what was received. They cannot tell us whether peopl
   - Jan 17, 2021 to Jan 22, 2021
   - Jan 24, 2021 to Jan 27, 2021
   - Jan 29, 2021 to Jan 31, 2021
-- No date before Nov 12, 2020 appears in the list of missing dates. From that date on, the missing dates become frequent and include one unbroken run from Dec 13, 2020 to Jan 2, 2021.
-- `add_to_cart` also has no data on 4 of these days: Nov 12, 2020 to Nov 14, 2020, and Nov 24, 2020. Across the whole period, `add_to_cart` has no data on 18 days. The check results do not list its other missing dates.
-- `select_item` also has no data on 6 of these days: Nov 12, 2020 to Nov 14, 2020, Nov 16, 2020 to Nov 17, 2020, and Nov 19, 2020. Across the whole period, `select_item` has no data on 22 days. The check results do not list its other missing dates.
+- `add_to_cart` also has no data on 4 of these days:
+  - Nov 12, 2020 to Nov 14, 2020
+  - Nov 24, 2020
+- `add_to_cart` has no data on 18 days across the whole period.
+- `select_item` also has no data on 6 of these days:
+  - Nov 12, 2020 to Nov 14, 2020
+  - Nov 16, 2020 to Nov 17, 2020
+  - Nov 19, 2020
+- `select_item` has no data on 22 days across the whole period.
+- The check results do not include a daily event count for `view_item_list`. They also do not include an expected daily volume for comparison.
 
 ## Impact
-Any analysis built on `view_item_list` cannot be trusted for this period. This includes:
-- counts of item list views
-- comparisons of item lists
-- any funnel step that starts from an item list view
+The tracking plan sets the severity as High.
 
-A day with no data will look like a day with no list views, and the check results cannot confirm whether that is true. The check results also give no expected daily volume for this event, so we cannot tell whether 71 events on the days with data is a normal amount or a low one.
+This affects any count of item list views for the period. It also affects any measure that uses `view_item_list` as a step, such as:
+- the rate at which list views lead to `select_item`, `view_item` or `add_to_cart`
+- comparisons of list views across days or weeks
 
-The severity is Medium because `view_item_list` is a browsing event and does not directly feed totals such as revenue or orders. This check found no missing days for `purchase`. However, having rows on every day does not show that purchase data is complete, so this ticket makes no claim that those totals are correct.
+The longest gap runs from Dec 13, 2020 to Jan 2, 2021. Any comparison that includes that stretch is especially exposed.
 
-If any reported conversion rate uses `view_item_list` as its starting point, that rate is unreliable for this period. In that case, the severity should be raised to High.
+The check results cannot tell whether no list views happened on those days or whether list views happened but were not received. Until that is known, `view_item_list` figures for this period should not be treated as complete. This also applies to the 33 days that have data, because rows on a day do not prove that day is complete.
 
-The partial overlap with `add_to_cart` and `select_item` means that analysis of the steps between browsing a list and adding to cart may be affected beyond `view_item_list` alone. It is possible but unconfirmed that these gaps are related.
+One possible explanation is that `view_item_list` is only sent from certain pages or list types. Another is that the dataset contains only part of the full traffic. Neither has been confirmed.
 
 ## Suggested next steps
-- Confirm whether `view_item_list` is expected to be received every day, and roughly how many events per day would be normal.
-- Find out whether anything changed in how `view_item_list` was sent around Nov 12, 2020, the first missing date. Then check whether the same change applies to the run from Dec 13, 2020 to Jan 2, 2021.
-- Check whether the pages or screens that show item lists were available on the days with no data. This would help separate a tracking problem from a real absence of list views.
-- Get the full list of missing dates for `add_to_cart` (18 days) and `select_item` (22 days). Compare them with the `view_item_list` gaps to see whether the overlap goes beyond the days listed here.
-- Decide whether the `add_to_cart` and `select_item` gaps need their own tickets.
+- Confirm where `view_item_list` is meant to be sent from, and whether it should appear on every day that item lists are shown.
+- Find out whether item lists were shown to users on the 59 days with no data. One way is to check whether any other source records list views on those days.
+- Check whether tracking for `view_item_list` was changed, added or removed at any point between Nov 1, 2020 and Jan 31, 2021.
+- Look at the gaps in `add_to_cart` and `select_item` separately. Do not assume they share a cause with the `view_item_list` gaps, even where the dates overlap.
+- Get the daily count of `view_item_list` events for the 33 days with data, and confirm whether those counts match what is expected.
 
 ## Acceptance criteria
-- For every day in the period, `view_item_list` either has data or the team has written confirmation of why no item list views were expected that day.
-- An expected daily volume for `view_item_list` is documented, and the received counts are checked against it.
-- The missing dates for `add_to_cart` and `select_item` are listed in full and either explained or tracked in separate tickets.
-- Until this is resolved, any analysis or conversion rate that uses `view_item_list` for Nov 1, 2020 to Jan 31, 2021 is labeled as based on incomplete data.
+- For every day in the period, `view_item_list` either has rows, or there is a confirmed and documented reason why no item list views occurred that day.
+- The tracking plan states where `view_item_list` is expected to be sent from. This lets future gaps be judged against a clear expectation.
+- Any analysis using `view_item_list` for Nov 1, 2020 to Jan 31, 2021 notes the 59 days with no data until those days are resolved.
