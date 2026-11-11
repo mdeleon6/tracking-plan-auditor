@@ -96,7 +96,7 @@ def format_day_with_holiday(event_date: str, holidays: dict[str, str]) -> str:
     return format_day(day)
 
 
-def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, severities: dict[str, str]) -> list[str]:
+def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, severities: dict[str, str], uses: dict[str, str]) -> list[str]:
     """Write one problem description per event that has days with no data."""
     days = pd.to_datetime(daily["event_date"], format="%Y%m%d")
     period = format_stretch(days.min(), days.max())
@@ -116,6 +116,7 @@ def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, sev
             "Check: missing days. An event is flagged for any day in the data period when it has no rows.",
             f"Event: {event_name}",
             f"Severity set by the tracking plan: {severity}.",
+            f"Used in, according to the tracking plan: {uses.get(event_name, 'not listed')}.",
             f"Data period: {period} ({total_days} days).",
             f"Total events received on the {days_with_data} days with data: {total_events}.",
             f"Days with no data for this event: {len(gaps)} of {total_days}.",
@@ -179,6 +180,7 @@ def describe_low_days_by_event(
     missing: dict[str, set[str]],
     severities: dict[str, str],
     holidays: dict[str, str],
+    uses: dict[str, str],
     min_ratio: float = 0.5,
 ) -> list[str]:
     """Write one problem description per event with low days."""
@@ -189,6 +191,7 @@ def describe_low_days_by_event(
             f"Check: low volume. A day is flagged when an event's count is below {min_ratio} of its typical count, meaning the median for that weekday.",
             f"Event: {event_name}",
             f"Tracking plan rating if this event stopped arriving entirely: {rating}.",
+            f"Used in, according to the tracking plan: {uses.get(event_name, 'not listed')}.",
             f"Number of flagged days: {len(rows)}.",
             "Holiday names next to dates come from the holiday calendar in the tracking plan, followed by where each holiday is observed as a day off. A single date without a name is not on that calendar. Date ranges are not checked against the calendar.",
             "Flagged days:",
@@ -208,7 +211,10 @@ def describe_low_days_by_event(
         if event_name in missing:
             stretches = group_consecutive_dates(missing[event_name])
             dates = "; ".join(format_stretch(start, end) for start, end in stretches)
-            lines.append(f"This event also has days with no data at all: {dates}.")
+            lines.append(
+                f"This event also has days with no data at all: {dates}. "
+                "Those days are covered in a separate missing-day ticket and are not part of this one."
+            )
 
         problems.append("\n".join(lines))
     return problems
@@ -218,6 +224,7 @@ def describe_low_days_together(
     together: pd.DataFrame,
     severities: dict[str, str],
     holidays: dict[str, str],
+    uses: dict[str, str],
     min_events: int = 5,
     min_ratio: float = 0.5,
 ) -> list[str]:
@@ -227,11 +234,13 @@ def describe_low_days_together(
 
     events = sorted(together["event_name"].unique())
     high_events = [event for event in events if severities.get(event) == "high"]
+    high_uses = "; ".join(f"{event}: {uses[event]}" for event in high_events if event in uses)
     lines = [
         f"Check: low volume across many events. A day is listed when at least {min_events} events are each below {min_ratio} of their typical count, meaning the median for that weekday.",
         "Event: multiple events",
         f"Days listed: {together['event_date'].nunique()}. Different events affected: {len(events)}.",
         f"Affected events rated High in the tracking plan if they stopped arriving entirely: {', '.join(high_events) or 'none'}.",
+        f"What the High-rated events are used in, according to the tracking plan: {high_uses or 'none'}.",
         "Holiday names next to dates come from the holiday calendar in the tracking plan, followed by where each holiday is observed as a day off. A single date without a name is not on that calendar. Date ranges are not checked against the calendar.",
         "Days listed, with each affected event's count as a percentage of its typical count:",
     ]
@@ -267,6 +276,14 @@ def load_event_severities() -> dict[str, str]:
     return dict(zip(rated["event_name"], rated["severity_if_missing"]))
 
 
+def load_event_uses() -> dict[str, str]:
+    """Read what each event is used in from the tracking plan."""
+    plan_path = Path(__file__).parent / "tracking_plan" / "events.csv"
+    plan = pd.read_csv(plan_path)
+    used = plan.dropna(subset=["used_in"])
+    return dict(zip(used["event_name"], used["used_in"]))
+
+
 def load_holidays() -> dict[str, str]:
     """Read the holiday calendar, keyed by date in YYYYMMDD format."""
     calendar_path = Path(__file__).parent / "tracking_plan" / "calendar.csv"
@@ -279,7 +296,8 @@ def draft_missing_day_tickets() -> None:
     daily = run_query(load_sql(sql_path))
     missing = find_missing_days(daily)
     severities = load_event_severities()
-    problems = describe_missing_days(missing, daily, severities)
+    uses = load_event_uses()
+    problems = describe_missing_days(missing, daily, severities, uses)
     output_folder = Path(__file__).parent / "ai_drafts"
     output_folder.mkdir(exist_ok=True)
 
@@ -294,10 +312,11 @@ def draft_low_day_tickets() -> None:
     daily = run_query(load_sql(sql_path))
     severities = load_event_severities()
     holidays = load_holidays()
+    uses = load_event_uses()
     together, separate = split_low_days(find_low_days(daily))
     problems = (
-        describe_low_days_together(together, severities, holidays)
-        + describe_low_days_by_event(separate, together, find_missing_days(daily), severities, holidays)
+        describe_low_days_together(together, severities, holidays, uses)
+        + describe_low_days_by_event(separate, together, find_missing_days(daily), severities, holidays, uses)
     )
     output_folder = Path(__file__).parent / "ai_drafts"
     output_folder.mkdir(exist_ok=True)

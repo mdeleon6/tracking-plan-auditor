@@ -1,14 +1,16 @@
-# Purchase events fell below half of their typical count on 7 days between Nov 5, 2020 and Jan 8, 2021
+# `purchase` events below half their typical daily volume on 7 days between Nov 5, 2020 and Jan 8, 2021
 
 **Event:** purchase
 **Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-An automated low-volume check flagged 7 days on which fewer `purchase` events were received than usual. The check flags a day when an event's count is below 0.5 of its typical count. The typical count is the median for that weekday. On every flagged day, the number of purchase events received was between 40.0% and 48.3% of typical.
+The `purchase` event was received at less than half its usual daily volume on 7 days between Nov 5, 2020 and Jan 8, 2021. Jan 5, 6, 7 and 8, 2021 were flagged in a row. The other flagged days are Nov 5, 2020, Dec 29, 2020 and Jan 2, 2021.
 
-Four of the flagged days fall on consecutive dates, Jan 5 to Jan 8, 2021. The other three are single dates spread across the period: Nov 5, 2020, Dec 29, 2020 and Jan 2, 2021. None of these 7 dates has a holiday name in the tracking plan's holiday calendar.
+The check flags a day when an event's count falls below 0.5 of its typical count. The typical count is the median count for that weekday.
 
-The check results only show what was received. They do not show whether fewer purchases actually happened on these days or whether purchases happened but were not recorded.
+The check results only show how many events were received. They do not show whether fewer purchases actually happened on these days or whether purchases happened but were not recorded. The cause is not known.
+
+None of the 7 flagged dates has a holiday name in the check results. That means none of them is on the tracking plan's holiday calendar.
 
 ## Evidence
 - Nov 5, 2020: 26 events, typical 54, 48.1% of typical
@@ -18,10 +20,8 @@ The check results only show what was received. They do not show whether fewer pu
 - Jan 6, 2021: 31 events, typical 67, 46.3% of typical
 - Jan 7, 2021: 26 events, typical 54, 48.1% of typical
 - Jan 8, 2021: 34 events, typical 79, 43.0% of typical
-- The check results do not state the full date range that was checked, and they do not give purchase totals for that range.
-- The check results do not include a query or other reference for reproducing these numbers.
 
-**Related days covered elsewhere:** `purchase` was also below the threshold on 6 more days when many events dropped together. A separate multi-event ticket covers those days, so they are not part of this ticket:
+**Related days handled in a separate ticket:** `purchase` was also below the threshold on 6 more days when many events dropped together. A separate multi-event ticket covers these days:
 - Dec 24, 2020 (Christmas Eve: widely observed)
 - Dec 25, 2020 (Christmas Day: widely observed)
 - Dec 31, 2020 (New Year's Eve: widely observed)
@@ -29,20 +29,35 @@ The check results only show what was received. They do not show whether fewer pu
 - Jan 4, 2021
 - Jan 18, 2021 (Martin Luther King Jr. Day: US only)
 
-Taken together with this ticket, `purchase` was below the threshold on every date from Jan 4 to Jan 8, 2021. Jan 2, 2021 is also close to the multi-event days of Dec 31 and Jan 1. Being close in time does not show that these drops share a cause, and none has been confirmed.
+Some of these days fall close to the flagged days in this ticket. However, the check results do not show whether the two sets of days share a cause.
 
 ## Impact
-`purchase` is the event that counts orders. On the 7 flagged days, the number of orders received was below half of typical. Until someone confirms whether this reflects real customer behavior or lost tracking, purchase counts for these days cannot be trusted. Any revenue, order or conversion figures built from these events also cannot be trusted for these days, and neither can any weekly, monthly or period totals that include them.
+According to the tracking plan, `purchase` is used for:
+- orders
+- revenue
+- conversion rate
+- revenue and conversion by country and platform
 
-The tracking plan rates this event High if it stops arriving entirely. The event did not stop arriving, because purchase events were received on every flagged day. That rating therefore sets the highest severity allowed for this ticket. Within that limit, the severity is High because order totals, a key business number, may be affected. It is not Medium, because Medium requires totals to still be correct, and that cannot be shown here.
+The tracking plan rates this event High if it stopped arriving entirely. That did not happen here, because events were received on every flagged day. For this low-volume problem, High is therefore the highest severity allowed, and severity is set by what the problem breaks.
+
+Severity is **High** because it is not known whether these drops reflect real behavior or missing data. Until that is confirmed, the following key business numbers cannot be trusted for these 7 days, or for any period that includes them:
+- order counts
+- revenue
+- conversion rate
+
+Breakdowns by country and platform for these days are also affected.
+
+The check results do not include revenue values or overall totals for the period, so the size of any effect on revenue is missing.
 
 ## Suggested next steps
-- For each of the 7 days, compare the purchase counts with an independent record of orders, if one exists, to find out whether purchases really were lower or were not tracked.
-- Find out whether any site, app or tracking changes were released on or just before Nov 5, Dec 29, Jan 2 or Jan 5–8. Treat any match as a possible lead, not a confirmed cause.
-- Check whether the drop on these days appears in only some parts of the traffic, such as certain platforms or regions, or across all of it. This check depends on what breakdowns are available.
-- Coordinate with the owner of the multi-event ticket on Jan 4, 2021, since `purchase` was also low from Jan 5 to Jan 8. Do not assume the two tickets share a cause unless that is confirmed.
+- For each flagged day, compare the received `purchase` count with an order record kept outside of tracking. This confirms whether purchases were actually lower or were not recorded.
+- Look at Jan 5–8, 2021 as a group, since they were flagged on consecutive days. Check whether any tracking, site or app changes were made around that time. Any link to those changes is possible but unconfirmed.
+- Check whether the drop on each flagged day affected some countries or platforms more than others. This can show whether the problem is limited to one area.
+- Check the outcome of the separate multi-event ticket. Review whether anything found there also applies to these 7 days, without assuming a shared cause.
 
 ## Acceptance criteria
-- Each of the 7 flagged days has a documented finding: either the low count matches real order activity, or it is confirmed as a tracking loss.
-- For any day confirmed as a tracking loss, the missing purchases are recovered in the data, or the day is clearly marked as incomplete so that reports and analyses can exclude or annotate it.
-- If a tracking cause is found, it is fixed, and `purchase` counts on later days are no longer flagged by the low-volume check for that same cause.
+- Each of the 7 flagged days is documented as either:
+  - a confirmed real drop in purchases, or
+  - confirmed missing data, with the cause noted.
+- If data is missing, the missing purchases are recovered. If they cannot be recovered, the affected days are clearly marked in any reporting on orders, revenue and conversion.
+- If a tracking fault is found and fixed, later days are not flagged by the low-volume check for `purchase` unless the drop is confirmed as real behavior.

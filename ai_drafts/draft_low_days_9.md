@@ -1,53 +1,43 @@
-# view_item_list received 1 event on Nov 18, 2020 (25.0% of typical), and no data on many days from Nov 12, 2020 to Jan 31, 2021
+# view_item_list received 25.0% of its typical volume on Nov 18, 2020
 
 **Event:** view_item_list
-**Found by:** · **Date found:** · **Severity:** Medium
+**Found by:** · **Date found:** · **Severity:** Low
 
 ## Description
-The low volume check flagged one day for the `view_item_list` event. On Nov 18, 2020, 1 event was received, while the typical count is 4. That is 25.0% of typical. The check flags a day when its count falls below 0.5 of the typical count, which is the median for the same weekday.
+On Nov 18, 2020, the `view_item_list` event had far fewer events than usual. The check results show 1 event that day, while the typical count is 4. That is 25.0% of typical.
 
-The check results also list many dates with no `view_item_list` data at all. These run from Nov 12, 2020 to Jan 31, 2021 and include an unbroken stretch from Dec 13, 2020 to Jan 2, 2021. Nov 18 falls directly between two no-data periods: Nov 16–17, 2020 and Nov 19, 2020.
+The low-volume check flags a day when an event's count is below 0.5 of its typical count. The typical count is the median for the same weekday. This is the only day flagged for this event.
 
-The check results do not say whether these low and empty days reflect real user behavior or a tracking problem. Receiving no rows does not show whether product lists were actually viewed on those days.
+Nov 18, 2020 does not have a holiday name next to it in the check results, so it is not on the tracking plan's holiday calendar.
 
-## Evidence
-- Flagged day: Nov 18, 2020, 1 event received against a typical count of 4 (25.0% of typical).
-- Number of flagged days: 1.
-- Days with no `view_item_list` data:
-  - Nov 12 – Nov 14, 2020
-  - Nov 16 – Nov 17, 2020
-  - Nov 19, 2020
-  - Nov 24 – Nov 25, 2020
-  - Nov 29, 2020
-  - Dec 2 – Dec 3, 2020
-  - Dec 5 – Dec 6, 2020
-  - Dec 8 – Dec 9, 2020
-  - Dec 13, 2020 – Jan 2, 2021
-  - Jan 4 – Jan 8, 2021
-  - Jan 11 – Jan 15, 2021
-  - Jan 17 – Jan 22, 2021
-  - Jan 24 – Jan 27, 2021
-  - Jan 29 – Jan 31, 2021
-- Nov 18, 2020 has no holiday name in the check results, so it is not on the tracking plan's holiday calendar. The no-data date ranges were not checked against the calendar.
-- The check results do not include the following:
-  - the start and end dates of the period the check covered
-  - the total number of `view_item_list` events in that period
-  - the event counts for days that were not flagged
+The check results also list many days with no `view_item_list` data at all. They include Nov 16 to Nov 17, 2020 and Nov 19, 2020, which are next to the flagged day. Those days are covered in a separate missing-day ticket and are not part of this one. Being close together in time does not show that the low day and the missing days share a cause.
+
+## Evidence (Nov 18, 2020)
+- Nov 18, 2020: 1 `view_item_list` event, typical 4, 25.0% of typical.
+- Flagging threshold: below 0.5 of typical, where typical is the median for that weekday.
+- Number of flagged days for this event: 1.
+- No holiday is named next to this date in the check results.
 
 ## Impact
-The typical daily count for this event is 4, so a single low day such as Nov 18 changes the numbers by only a few events. The larger concern is the long list of dates with no data. If those gaps come from tracking loss rather than real behavior, any analysis of product list views will be incomplete over this period. That includes list view trends and any funnel step that starts from a list view. This has not been confirmed.
+According to the tracking plan, `view_item_list` is used for:
+- product list views
+- the list-to-product funnel step
 
-The tracking plan rates this event High if it stops arriving entirely. The event did not stop entirely, because data was received on dates between the no-data periods. For that reason, the High rating is treated as the ceiling and is not applied directly.
+For Nov 18, 2020, product list view counts and the list-to-product funnel step may not reflect actual activity. The check results only show what was received. They do not show whether the low count reflects real user behavior or incomplete data collection.
 
-The severity is Medium rather than High because revenue and order counts are not measured by this event. The problem affects analysis that depends on product list views. That analysis cannot be relied on for this period until the gaps are explained.
+The tracking plan rates this event High, but that rating applies only if the event stops arriving entirely. Events did arrive on Nov 18, 2020, so High is the most this ticket could be rated, not its automatic rating.
+
+Severity is Low for two reasons:
+- The problem affects a single day.
+- The check results give a typical count of only 4 events for that day.
+
+Because of that, the effect on decisions made from product list views or the list-to-product funnel is expected to be small. Analyses that look closely at that day should treat its `view_item_list` figures with caution.
 
 ## Suggested next steps
-- Confirm whether `view_item_list` was expected to fire on every day from Nov 12, 2020 to Jan 31, 2021. For example, check whether the event was live on all relevant pages throughout this period.
-- Check whether a typical count of 4 per day means that days with zero events are normal for this event. Treat this only as a possible, unconfirmed explanation.
-- Compare the no-data dates, especially Dec 13, 2020 – Jan 2, 2021, against release or tracking change records to see whether any change lines up with them. Matching dates alone would not confirm a cause.
-- Obtain the missing figures listed in Evidence, so the size of the gaps can be judged against the full period.
+- Find out whether the 1 event received on Nov 18, 2020 reflects real activity or whether events were sent but not received or stored.
+- Check whether anything changed in how `view_item_list` was collected around Nov 18, 2020. The check results do not provide this information.
+- Coordinate with whoever owns the separate missing-day ticket for this event. Investigation of the nearby missing days may help explain Nov 18, 2020, but treat any link as unconfirmed until it is verified.
 
 ## Acceptance criteria
-- Nov 18, 2020 and each no-data date range have a documented explanation. Each explanation either confirms real user behavior or identifies a tracking issue.
-- If a tracking issue is confirmed, the fix is in place, and any data that can be recovered for the affected dates is restored.
-- Analyses that use `view_item_list` for Nov 12, 2020 – Jan 31, 2021 note these gaps until they are resolved.
+- The reason for the low count on Nov 18, 2020 is confirmed and documented. It should be stated as either real user behavior or a data collection problem.
+- If the cause is a data collection problem, either the missing events are recovered so the day is no longer flagged, or the day is clearly marked as incomplete for any analysis of product list views or the list-to-product funnel step.
