@@ -1,5 +1,5 @@
 from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days
-from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days
+from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days, split_low_days, describe_low_days_by_event, describe_low_days_together
 import pandas as pd
 
 
@@ -157,3 +157,61 @@ def test_describes_dates_shared_with_other_events():
     assert "select_item also has no data on 1 of these days: Nov 3, 2020." in problems[0]
     assert "add_to_cart also has" not in problems[0]
     assert "Severity set by the tracking plan: Not rated." in problems[0]
+
+
+def test_splits_days_when_many_events_drop_together():
+    low = pd.DataFrame({
+        "event_date": ["20201224", "20201224", "20201224", "20201105"],
+        "event_name": ["purchase", "view_item", "add_to_cart", "purchase"],
+    })
+
+    together, separate = split_low_days(low, min_events=3)
+
+    assert len(together) == 3
+    assert set(together["event_date"]) == {"20201224"}
+    assert len(separate) == 1
+    assert list(separate["event_date"]) == ["20201105"]
+
+
+def test_describes_low_days_for_one_event():
+    separate = pd.DataFrame({
+        "event_date": ["20201105", "20210105"],
+        "event_name": ["purchase", "purchase"],
+        "event_count": [26, 29],
+        "typical": [54.0, 60.0],
+    })
+    separate["ratio"] = separate["event_count"] / separate["typical"]
+    together = pd.DataFrame({
+        "event_date": ["20201224", "20201225", "20201224"],
+        "event_name": ["purchase", "purchase", "view_item"],
+    })
+    missing = {"purchase": {"20201201", "20201202"}}
+
+    problems = describe_low_days_by_event(separate, together, missing, {"purchase": "high"})
+    problem = problems[0]
+
+    assert len(problems) == 1
+    assert "Tracking plan rating if this event stopped arriving entirely: High." in problem
+    assert "- Nov 5, 2020: 26 events, typical 54, 48.1% of typical" in problem
+    assert problem.count("This event was also below threshold") == 1
+    assert "Dec 24, 2020, Dec 25, 2020." in problem
+    assert "This event also has days with no data at all: Dec 1, 2020 to Dec 2, 2020." in problem
+
+
+def test_describes_days_when_many_events_drop_together():
+    together = pd.DataFrame({
+        "event_date": ["20201224", "20201224", "20201225"],
+        "event_name": ["purchase", "view_item", "purchase"],
+        "ratio": [0.3, 0.4, 0.2],
+    })
+    severities = {"purchase": "high", "view_item": "medium"}
+
+    problem = describe_low_days_together(together, severities)[0]
+
+    assert "Days listed: 2. Different events affected: 2." in problem
+    assert "rated High in the tracking plan if they stopped arriving entirely: purchase." in problem
+    assert "- Dec 24, 2020: 2 events below threshold: purchase 30.0%, view_item 40.0%" in problem
+
+    no_ratings = describe_low_days_together(together, {})[0]
+    assert "if they stopped arriving entirely: none." in no_ratings
+    assert describe_low_days_together(together.iloc[0:0], severities) == []
