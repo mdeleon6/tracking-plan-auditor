@@ -13,6 +13,8 @@ Write for someone outside the immediate team who has no background on this probl
 
 Never state why a problem happened unless the input confirms the cause. If you mention a possible cause, label it as possible and unconfirmed. Problems that appear together do not prove a shared cause.
 
+Only call a date a holiday if the check results name a holiday next to it. A holiday is context, not a cause: mention it only as a possible, unconfirmed explanation, and say where it is observed. Do not use your own knowledge of holidays, seasons or weekdays to describe or explain a date.
+
 A check result only shows what was received. No rows on a day does not prove whether the activity happened, so do not say a gap comes from missing data rather than real behavior. Rows on a day do not prove the data is complete, so do not use them to say that totals are correct or unaffected.
 
 Only use numbers exactly as they appear in the input. Do not calculate, convert or round any number. If a number you would want is missing, say it is missing. Never estimate.
@@ -83,6 +85,15 @@ def format_stretch(start: pd.Timestamp, end: pd.Timestamp) -> str:
     if start == end:
         return format_day(start)
     return f"{format_day(start)} to {format_day(end)}"
+
+
+def format_day_with_holiday(event_date: str, holidays: dict[str, str]) -> str:
+    """Format a YYYYMMDD date, adding the holiday name if the calendar has one."""
+    day = pd.to_datetime(event_date, format="%Y%m%d")
+    holiday = holidays.get(event_date)
+    if holiday:
+        return f"{format_day(day)} ({holiday})"
+    return format_day(day)
 
 
 def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, severities: dict[str, str]) -> list[str]:
@@ -161,11 +172,13 @@ def split_low_days(low: pd.DataFrame, min_events: int = 5) -> tuple[pd.DataFrame
     separate = low[events_per_day < min_events]
     return together, separate
 
+
 def describe_low_days_by_event(
     separate: pd.DataFrame,
     together: pd.DataFrame,
     missing: dict[str, set[str]],
     severities: dict[str, str],
+    holidays: dict[str, str],
     min_ratio: float = 0.5,
 ) -> list[str]:
     """Write one problem description per event with low days."""
@@ -177,16 +190,16 @@ def describe_low_days_by_event(
             f"Event: {event_name}",
             f"Tracking plan rating if this event stopped arriving entirely: {rating}.",
             f"Number of flagged days: {len(rows)}.",
+            "Holiday names next to dates come from the holiday calendar in the tracking plan, followed by where each holiday is observed as a day off. A single date without a name is not on that calendar. Date ranges are not checked against the calendar.",
             "Flagged days:",
         ]
         for _, row in rows.sort_values("event_date").iterrows():
-            day = pd.to_datetime(row["event_date"], format="%Y%m%d")
             percent = round(row["ratio"] * 100, 1)
-            lines.append(f"- {format_day(day)}: {row['event_count']} events, typical {row['typical']:g}, {percent}% of typical")
+            lines.append(f"- {format_day_with_holiday(row['event_date'], holidays)}: {row['event_count']} events, typical {row['typical']:g}, {percent}% of typical")
         
         grouped_days = sorted(together[together["event_name"] == event_name]["event_date"])
         if grouped_days:
-            days = ", ".join(format_day(pd.to_datetime(d, format="%Y%m%d")) for d in grouped_days)
+            days = ", ".join(format_day_with_holiday(d, holidays) for d in grouped_days)
             lines.append(
                 f"This event was also below threshold on {len(grouped_days)} more days when many events dropped together. "
                 f"Those days are covered in a separate multi-event ticket: {days}."
@@ -204,6 +217,7 @@ def describe_low_days_by_event(
 def describe_low_days_together(
     together: pd.DataFrame,
     severities: dict[str, str],
+    holidays: dict[str, str],
     min_events: int = 5,
     min_ratio: float = 0.5,
 ) -> list[str]:
@@ -218,15 +232,15 @@ def describe_low_days_together(
         "Event: multiple events",
         f"Days listed: {together['event_date'].nunique()}. Different events affected: {len(events)}.",
         f"Affected events rated High in the tracking plan if they stopped arriving entirely: {', '.join(high_events) or 'none'}.",
+        "Holiday names next to dates come from the holiday calendar in the tracking plan, followed by where each holiday is observed as a day off. A single date without a name is not on that calendar. Date ranges are not checked against the calendar.",
         "Days listed, with each affected event's count as a percentage of its typical count:",
     ]
     for event_date, rows in together.groupby("event_date"):
-        day = pd.to_datetime(event_date, format="%Y%m%d")
         drops = ", ".join(
             f"{row['event_name']} {round(row['ratio'] * 100, 1)}%"
             for _, row in rows.sort_values("event_name").iterrows()
         )
-        lines.append(f"- {format_day(day)}: {len(rows)} events below threshold: {drops}")
+        lines.append(f"- {format_day_with_holiday(event_date, holidays)}: {len(rows)} events below threshold: {drops}")
 
     return ["\n".join(lines)]
 
@@ -253,6 +267,13 @@ def load_event_severities() -> dict[str, str]:
     return dict(zip(rated["event_name"], rated["severity_if_missing"]))
 
 
+def load_holidays() -> dict[str, str]:
+    """Read the holiday calendar, keyed by date in YYYYMMDD format."""
+    calendar_path = Path(__file__).parent / "tracking_plan" / "calendar.csv"
+    calendar = pd.read_csv(calendar_path, dtype={"date": str})
+    return dict(zip(calendar["date"], calendar["name"] + ": " + calendar["observed"]))
+
+
 def draft_missing_day_tickets() -> None:
     sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
     daily = run_query(load_sql(sql_path))
@@ -272,10 +293,11 @@ def draft_low_day_tickets() -> None:
     sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
     daily = run_query(load_sql(sql_path))
     severities = load_event_severities()
+    holidays = load_holidays()
     together, separate = split_low_days(find_low_days(daily))
     problems = (
-        describe_low_days_together(together, severities)
-        + describe_low_days_by_event(separate, together, find_missing_days(daily), severities)
+        describe_low_days_together(together, severities, holidays)
+        + describe_low_days_by_event(separate, together, find_missing_days(daily), severities, holidays)
     )
     output_folder = Path(__file__).parent / "ai_drafts"
     output_folder.mkdir(exist_ok=True)

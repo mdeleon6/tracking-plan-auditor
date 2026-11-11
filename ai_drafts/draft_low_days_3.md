@@ -1,56 +1,64 @@
-# add_shipping_info arrived below half its typical volume on 12 days from Dec 26, 2020 to Jan 15, 2021
+# add_shipping_info below half its typical daily count on 12 days, Dec 26, 2020 – Jan 15, 2021
 
 **Event:** add_shipping_info
 **Found by:** · **Date found:** · **Severity:** Medium
 
 ## Description
-The `add_shipping_info` event was received at less than half its typical daily volume on 12 days between Dec 26, 2020 and Jan 15, 2021. The check calls a day "typical" based on the median count for that weekday, and it flags a day when the count falls below 0.5 of that median. On these 12 days, the event arrived at between 32.4% and 49.4% of typical.
+The `add_shipping_info` event arrived in low volume on 12 days between Dec 26, 2020 and Jan 15, 2021. A low-volume check flags a day when an event's count is below 0.5 of its typical count. Here, "typical" means the median count for that weekday. On the 12 flagged days, the event arrived at between 32.4% and 49.4% of typical.
 
-The event did not stop arriving. Events were received on every flagged day, just in lower numbers than usual.
+The event did not stop arriving. It was received on every flagged day, just at lower counts.
 
-The check results do not say why the counts were low. The period overlaps the end-of-year holidays, so the drop **could possibly** reflect real changes in shopper behavior. This is unconfirmed. A tracking problem is also possible and also unconfirmed. Low counts alone do not show which one it is.
+The check results also show this event was below the threshold on 7 more days when many events dropped at the same time. Those days are handled in a separate multi-event ticket and are not part of this one: Dec 24, 2020; Dec 25, 2020; Dec 30, 2020; Dec 31, 2020; Jan 1, 2021; Jan 4, 2021; Jan 18, 2021.
 
-This event was also below the threshold on 7 more days: Dec 24, 2020, Dec 25, 2020, Dec 30, 2020, Dec 31, 2020, Jan 1, 2021, Jan 4, 2021 and Jan 18, 2021. On those days, many events dropped together, so they are covered in a separate multi-event ticket and not here. The fact that these days fall in the same window does not show that they share a cause with the 12 days in this ticket.
+The check results do not say why the counts are low. Two explanations are possible:
+- Fewer users reached this step.
+- Some events were not received.
+
+Neither is confirmed.
 
 ## Evidence (Dec 26, 2020 – Jan 15, 2021)
-- Check used: low volume. A day is flagged when the count is below 0.5 of the median for that weekday.
-- Number of flagged days: 12.
-- Dec 26, 2020: 48 events, typical 148, 32.4% of typical.
-- Dec 28, 2020: 101 events, typical 211, 47.9% of typical.
-- Dec 29, 2020: 80 events, typical 233, 34.3% of typical.
-- Jan 2, 2021: 48 events, typical 148, 32.4% of typical.
-- Jan 3, 2021: 51 events, typical 129.5, 39.4% of typical.
-- Jan 5, 2021: 88 events, typical 233, 37.8% of typical.
-- Jan 6, 2021: 116 events, typical 248, 46.8% of typical.
-- Jan 8, 2021: 105 events, typical 269, 39.0% of typical.
-- Jan 9, 2021: 58 events, typical 148, 39.2% of typical.
-- Jan 10, 2021: 58 events, typical 129.5, 44.8% of typical.
-- Jan 11, 2021: 94 events, typical 211, 44.5% of typical.
-- Jan 15, 2021: 133 events, typical 269, 49.4% of typical.
-- **Not included in the check results:**
-  - Total `add_shipping_info` counts for the period.
-  - Counts for the days that were not flagged.
-  - Counts for related events, such as checkout starts or purchases, on these days.
+| Date | Events received | Typical | % of typical |
+|---|---|---|---|
+| Dec 26, 2020 | 48 | 148 | 32.4% |
+| Dec 28, 2020 | 101 | 211 | 47.9% |
+| Dec 29, 2020 | 80 | 233 | 34.3% |
+| Jan 2, 2021 | 48 | 148 | 32.4% |
+| Jan 3, 2021 | 51 | 129.5 | 39.4% |
+| Jan 5, 2021 | 88 | 233 | 37.8% |
+| Jan 6, 2021 | 116 | 248 | 46.8% |
+| Jan 8, 2021 | 105 | 269 | 39.0% |
+| Jan 9, 2021 | 58 | 148 | 39.2% |
+| Jan 10, 2021 | 58 | 129.5 | 44.8% |
+| Jan 11, 2021 | 94 | 211 | 44.5% |
+| Jan 15, 2021 | 133 | 269 | 49.4% |
+
+**Holiday calendar:**
+- None of the 12 flagged days in this ticket has a holiday name in the check results, so none of them is on the tracking plan's holiday calendar.
+- Some of the 7 days in the separate ticket do have names: Dec 24, 2020 (Christmas Eve, widely observed), Dec 25, 2020 (Christmas Day, widely observed), Dec 31, 2020 (New Year's Eve, widely observed), Jan 1, 2021 (New Year's Day, widely observed) and Jan 18, 2021 (Martin Luther King Jr. Day, US only).
+- It is possible, but unconfirmed, that the flagged days were affected by being close to these holidays. The flagged days themselves are not holidays on the calendar.
+
+**Missing from the check results:**
+- Counts for this event outside the flagged days, including whether volume returned to typical after Jan 15, 2021.
+- Counts for any other event on the 12 flagged days.
 
 ## Impact
-`add_shipping_info` marks a step in the checkout process. Any analysis that relies on this step cannot be trusted for the 12 flagged days until the reason for the low counts is known. This includes checkout funnel reports and the share of shoppers moving through the shipping step.
+`add_shipping_info` records one step in checkout. It does not record orders or revenue. Any analysis that uses this step will show lower counts on the 12 flagged days, for example the share of users moving from one checkout step to the next. If the low counts are caused by events that were not received, those step-to-step rates for these days will be wrong. If the low counts reflect real user behavior, the numbers are correct.
 
-The tracking plan rates this event High if it stops arriving entirely. That did not happen here, because the event was still received on every flagged day. For that reason, High is the highest severity this problem can have. It is not automatically the severity of this ticket.
+The check results contain no information about orders, revenue or other events on these days. This ticket does not establish whether those numbers are affected.
 
-This ticket is rated **Medium** because the problem affects one type of analysis: the checkout steps that use `add_shipping_info`. The check results cover only this event. They do not show a drop in purchase or revenue events on these days, so there is no evidence here that those totals are affected. They also do not show that those totals are correct, because data for those events is not part of the check results.
-
-If later checks find that purchase or revenue events also dropped on these same days, the severity should be reviewed against the High rule.
+**Severity reasoning:**
+- The tracking plan rates this event High, but only if it stops arriving entirely. It kept arriving on every flagged day, so High is the highest severity allowed here, not the automatic one.
+- Based on what is known, the problem affects one type of analysis: checkout analysis that uses the `add_shipping_info` step.
+- No key business totals are shown to be affected, so Medium applies.
+- If later investigation shows that orders, revenue or overall conversion are affected, the severity should be reassessed under the High rule.
 
 ## Suggested next steps
-- **Compare with nearby checkout events.** Look at checkout start and purchase counts on the 12 flagged days. If those events stayed at normal levels while `add_shipping_info` dropped, a tracking problem becomes more likely. If they dropped by a similar amount, real shopper behavior becomes more likely. Neither result confirms the cause alone.
-- **Look for changes around Dec 26, 2020.** Check whether any site, app or tracking changes went live near the first flagged day that could affect how `add_shipping_info` is sent.
-- **Break down the flagged days.** Split the counts by platform, browser or app version to see whether the drop is limited to one group.
-- **Review the separate multi-event ticket.** Keep the 7 days covered in that ticket separate from this one unless a shared cause is confirmed.
+- Compare `add_shipping_info` counts on the 12 flagged days with the checkout steps before and after it. This will show whether only this event dropped or the whole checkout flow dropped.
+- Find out whether any changes to the site, app or tracking setup were released between late December 2020 and mid-January 2021 that could affect when this event is sent.
+- Check whether the event's daily counts returned to typical after Jan 15, 2021. The check results do not include those days.
+- Coordinate with the owner of the separate multi-event ticket. Both tickets cover nearby dates, but sharing nearby dates does not show that they share a cause.
 
 ## Acceptance criteria
-- Each of the 12 flagged days has a confirmed explanation, labeled as either real shopper behavior or a tracking problem.
-- If a tracking problem is confirmed:
-  - It is fixed.
-  - Later `add_shipping_info` counts no longer fall below 0.5 of the weekday median for reasons tied to that problem.
-  - Analysts are told which of the 12 days to leave out of checkout funnel analysis.
-- If real behavior is confirmed, the days are documented as expected seasonal lows so future low-volume checks can be read in that context.
+- Each of the 12 flagged days has a documented explanation. The explanation either confirms real lower user activity or identifies missing events.
+- If events were lost, the tracking problem is fixed. Recoverable data is restored, or the affected days are clearly marked as incomplete for any analysis that uses this event.
+- If the drop is confirmed as real behavior, the 12 days are noted as expected low-volume days so they are not treated as a tracking failure in future reviews.

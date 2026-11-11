@@ -1,23 +1,23 @@
-event_name,category,description,status,severity_if_missing
-first_visit,automatic,when it is the user's first visit,active,medium
-session_start,automatic,fires when the session begins,active,high
-user_engagement,automatic,when a page is in focus for a minimum of one second,active,medium
-page_view,enhanced,when a page is loaded,active,medium
-scroll,enhanced,when the user reaches 90% of the page's depth,active,medium
-click,enhanced,when the user clicks on an outside link to leave the site,active,low
-view_search_results,enhanced,when the user views search results,active,low
-view_item_list,ecommerce,when the user views a list of items,active,high
-select_item,ecommerce,when the user selects an item,active,medium
-view_item,ecommerce,when the user views an item,active,medium
-add_to_wishlist,ecommerce,when the user adds an item to their wishlist,active,medium
-add_to_cart,ecommerce,when the user adds an item to their cart,active,high
-remove_from_cart,ecommerce,when the user removes an item from their cart,active,low
-view_cart,ecommerce,when the user views their cart,active,medium
-begin_checkout,ecommerce,when the user begins the checkout process,active,high
-add_payment_info,ecommerce,when the user adds payment information,active,high
-add_shipping_info,ecommerce,when the user adds shipping information,active,high
-purchase,ecommerce,when the user makes a purchase,active,high
-refund,ecommerce,when the user receives a refund,active,high
-view_promotion,ecommerce,when the user views a promotion,active,low
-select_promotion,ecommerce,when the user selects a promotion,active,low
-checkout_progress,ecommerce,this event is retired and replaced by `add_shipping_info` and `add_payment_info`,deprecated
+event_name,category,description,status,severity_if_missing,used_in
+first_visit,automatic,when it is the user's first visit,active,medium,"new users, new vs returning breakdowns, new-user conversion rate, retention rate"
+session_start,automatic,fires when the session begins,active,high,"sessions, conversion rate per session, sessions by country and platform"
+user_engagement,automatic,when a page is in focus for a minimum of one second,active,medium,"engagement time, engaged sessions"
+page_view,enhanced,when a page is loaded,active,medium,"page views, top pages, traffic by country and platform"
+scroll,enhanced,when the user reaches 90% of the page's depth,active,medium,content engagement
+click,enhanced,when the user clicks on an outside link to leave the site,active,low,outbound link reporting
+view_search_results,enhanced,when the user views search results,active,low,site search reporting
+view_item_list,ecommerce,when the user views a list of items,active,high,"product list views, list-to-product funnel step"
+select_item,ecommerce,when the user selects an item,active,medium,"product list click-through rate, item selection reporting"
+view_item,ecommerce,when the user views an item,active,medium,"product views, view-to-cart rate, product performance by country and platform"
+add_to_wishlist,ecommerce,when the user adds an item to their wishlist,active,medium,wishlist reporting
+add_to_cart,ecommerce,when the user adds an item to their cart,active,high,"add-to-cart rate, cart-to-purchase conversion rate, checkout funnel"
+remove_from_cart,ecommerce,when the user removes an item from their cart,active,low,cart removal reporting
+view_cart,ecommerce,when the user views their cart,active,medium,checkout funnel
+begin_checkout,ecommerce,when the user begins the checkout process,active,high,"checkout funnel, checkout conversion rate by country and platform"
+add_payment_info,ecommerce,when the user adds payment information,active,high,"checkout funnel, checkout conversion rate by country and platform"
+add_shipping_info,ecommerce,when the user adds shipping information,active,high,"checkout funnel, checkout conversion rate by country and platform"
+purchase,ecommerce,when the user makes a purchase,active,high,"orders, revenue, conversion rate, revenue and conversion by country and platform"
+refund,ecommerce,when the user receives a refund,active,high,"refunds, net revenue"
+view_promotion,ecommerce,when the user views a promotion,active,low,promotion impressions
+select_promotion,ecommerce,when the user selects a promotion,active,low,promotion click-through rate
+checkout_progress,ecommerce,this event is retired and replaced by `add_shipping_info` and `add_payment_info`,deprecated,,

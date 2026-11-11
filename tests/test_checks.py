@@ -1,5 +1,5 @@
 from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days
-from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days, split_low_days, describe_low_days_by_event, describe_low_days_together
+from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days, split_low_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday
 import pandas as pd
 
 
@@ -187,7 +187,7 @@ def test_describes_low_days_for_one_event():
     })
     missing = {"purchase": {"20201201", "20201202"}}
 
-    problems = describe_low_days_by_event(separate, together, missing, {"purchase": "high"})
+    problems = describe_low_days_by_event(separate, together, missing, {"purchase": "high"}, {})
     problem = problems[0]
 
     assert len(problems) == 1
@@ -196,6 +196,7 @@ def test_describes_low_days_for_one_event():
     assert problem.count("This event was also below threshold") == 1
     assert "Dec 24, 2020, Dec 25, 2020." in problem
     assert "This event also has days with no data at all: Dec 1, 2020 to Dec 2, 2020." in problem
+    assert "Date ranges are not checked against the calendar." in problem
 
 
 def test_describes_days_when_many_events_drop_together():
@@ -205,13 +206,21 @@ def test_describes_days_when_many_events_drop_together():
         "ratio": [0.3, 0.4, 0.2],
     })
     severities = {"purchase": "high", "view_item": "medium"}
+    holidays = {"20201224": "Christmas Eve", "20201225": "Christmas Day"}
 
-    problem = describe_low_days_together(together, severities)[0]
+    problem = describe_low_days_together(together, severities, holidays)[0]
 
     assert "Days listed: 2. Different events affected: 2." in problem
     assert "rated High in the tracking plan if they stopped arriving entirely: purchase." in problem
-    assert "- Dec 24, 2020: 2 events below threshold: purchase 30.0%, view_item 40.0%" in problem
+    assert "- Dec 24, 2020 (Christmas Eve): 2 events below threshold: purchase 30.0%, view_item 40.0%" in problem
 
-    no_ratings = describe_low_days_together(together, {})[0]
+    no_ratings = describe_low_days_together(together, {}, holidays)[0]
     assert "if they stopped arriving entirely: none." in no_ratings
-    assert describe_low_days_together(together.iloc[0:0], severities) == []
+    assert describe_low_days_together(together.iloc[0:0], severities, holidays) == []
+
+
+def test_adds_holiday_name_to_date():
+    holidays = {"20201224": "Christmas Eve"}
+
+    assert format_day_with_holiday("20201224", holidays) == "Dec 24, 2020 (Christmas Eve)"
+    assert format_day_with_holiday("20201105", holidays) == "Nov 5, 2020"
