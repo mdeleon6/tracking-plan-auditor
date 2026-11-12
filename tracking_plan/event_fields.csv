@@ -29,3 +29,9 @@ purchase,item_name,items,string,yes,dimension,active,product,"revenue and units 
 purchase,item_category,items,string,yes,dimension,active,product,revenue by category
 purchase,price,items,number,yes,metric,active,product,"revenue by product, average selling price"
 purchase,quantity,items,number,yes,metric,active,product,"units sold, revenue by product"
+session_start,country,geo,string,yes,dimension,active,event,sessions and conversion rate by country
+session_start,device_category,device,string,yes,dimension,active,event,sessions and conversion rate by device
+session_start,platform,top_level,string,yes,dimension,active,event,sessions and conversion rate by platform
+purchase,country,geo,string,yes,dimension,active,event,orders and revenue by country
+purchase,device_category,device,string,yes,dimension,active,event,orders and revenue by device
+purchase,platform,top_level,string,yes,dimension,active,event,orders and revenue by platform

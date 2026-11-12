@@ -81,17 +81,19 @@ def run_field_check() -> pd.DataFrame:
     items_sql = Path(__file__).parent / "queries" / "17_items_field_coverage.sql"
     ecommerce_sql = Path(__file__).parent / "queries" / "18_ecommerce_field_coverage.sql"
     per_event_sql = Path(__file__).parent / "queries" / "19_items_field_coverage_per_event.sql"
+    context_sql = Path(__file__).parent / "queries" / "20_country_platform_coverage.sql"
     coverage = pd.concat([
         run_query(load_sql(params_sql)).assign(measured_per="event"),
         run_query(load_sql(items_sql)).assign(measured_per="product"),
         run_query(load_sql(ecommerce_sql)).assign(measured_per="event"),
         run_query(load_sql(per_event_sql)).assign(measured_per="event"),
+        run_query(load_sql(context_sql)).assign(measured_per="event"),
     ])
     plan_path = Path(__file__).parent / "tracking_plan" / "event_fields.csv"
     plan = pd.read_csv(plan_path)
     required = plan[
         (plan["required"] == "yes")
-        & (plan["location"].isin(["event_params", "items", "ecommerce"]))
+        & (plan["location"].isin(["event_params", "items", "ecommerce","geo", "device", "top_level"]))
         & (plan["status"] == "active")
     ][["event_name", "field_name","location", "measured_per"]]
 
