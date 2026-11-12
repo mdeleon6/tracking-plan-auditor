@@ -2,8 +2,9 @@
 
 WITH item_rows AS (
   SELECT event_name, item
-  FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`,
+  FROM `{table}`,
     UNNEST(items) AS item
+  WHERE _TABLE_SUFFIX BETWEEN '{start_date}' AND '{end_date}'
 )
 SELECT
   event_name,

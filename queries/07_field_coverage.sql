@@ -3,7 +3,8 @@ WITH totals AS (
     SELECT
         event_name,
         COUNT(*) AS total_events
-    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`
+    FROM `{table}`
+    WHERE _TABLE_SUFFIX BETWEEN '{start_date}' AND '{end_date}'
     GROUP BY
         event_name
 ),
@@ -12,8 +13,9 @@ fields AS (
         event_name,
         param.key AS field_name,
         COUNT(*) AS times_sent
-    FROM `bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*`,
+    FROM `{table}`,
         UNNEST(event_params) AS param
+    WHERE _TABLE_SUFFIX BETWEEN '{start_date}' AND '{end_date}'
     GROUP BY event_name, field_name
 )
 SELECT 

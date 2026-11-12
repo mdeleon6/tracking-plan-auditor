@@ -1,0 +1,5 @@
+# Where the auditor reads data from. Change these to point at another GA4 export.
+billing_project = "tracking-auditor-513612"
+table = "bigquery-public-data.ga4_obfuscated_sample_ecommerce.events_*"
+start_date = "20201101"
+end_date = "20210131"

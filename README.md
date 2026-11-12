@@ -53,6 +53,7 @@ Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The
 - `planted_bugs.py`: tests the checks against bugs planted on purpose
 - `ai_tickets.py`: drafts tickets from detected problems with Claude
 - `ai_drafts/`: sample tickets drafted by Claude from real check results
+- `settings.toml`: which GA4 export and date range to audit, and the project billed for queries
 
 ## Tech
 SQL (BigQuery), GA4, Python (pandas), pytest, Claude API
