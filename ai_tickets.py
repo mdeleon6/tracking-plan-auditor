@@ -23,7 +23,7 @@ Do not invent queries, code, file names, links or people.
 
 Choose severity by what the problem breaks, and give your reason in the Impact section:
 - High: key business numbers cannot be trusted, such as revenue, orders, units sold or conversion rates.
-- Medium: a secondary total or one type of breakdown is affected, but no key business number depends on the missing data.
+- Medium: a secondary total or one type of breakdown is affected, but no key business number depends on the missing data. A breakdown of a key number, such as conversion by product, is Medium when the overall number is not affected.
 - Low: too small to change any decision, such as a few events on a single day, or reporting nobody acts on.
 
 You will be given an example ticket inside <example_ticket> tags. Copy its sections, order and tone only. Never reuse its events, dates, numbers or references to past experience. Leave "Found by" and "Date found" blank for a person to fill in. Do not carry over any possible cause, impact, next step or acceptance criterion from the example. Do not reuse the example's wording or the questions it asks.
@@ -152,9 +152,11 @@ def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], mi
             f"Flagged fields, all with coverage_rate {round(rate, 6)}:",
         ]
         for _, row in rows.iterrows():
-            unit = "product" if row["location"] == "items" else "event"
+            unit = row["measured_per"]
             used = uses.get((event_name, row["field_name"]), "not listed")
             lines.append(f"- {row['field_name']} (location: {row['location']}, measured per {unit}; used in: {used})")
+        if ((rows["location"] == "items") & (rows["measured_per"] == "event")).any():
+            lines.append("The tracking plan expects these fields on one product per event, the product actually added, so an event counts as covered if at least one of its products has the field.")
         problems.append("\n".join(lines))
     return problems
 
@@ -336,4 +338,4 @@ def draft_low_day_tickets() -> None:
 
 
 if __name__ == "__main__":
-    draft_low_day_tickets()
+    draft_field_gap_tickets()

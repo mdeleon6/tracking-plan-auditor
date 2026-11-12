@@ -53,10 +53,12 @@ def test_field_gaps_finds_low_and_missing_fields():
     required = pd.DataFrame({
         "event_name": ["purchase", "purchase", "purchase"],
         "field_name": ["value", "tax", "currency"],
+        "measured_per": ["event", "event", "event"],
     })
     coverage = pd.DataFrame({
         "event_name": ["purchase", "purchase"],
         "field_name": ["value", "tax"],
+        "measured_per": ["event", "event"],
         "coverage_rate": [1.0, 0.92],
     })
 
@@ -97,6 +99,7 @@ def test_groups_fields_with_same_event_and_rate():
         "event_name": ["purchase", "purchase", "purchase"],
         "field_name": ["value", "tax", "shipping_tier"],
         "location": ["event_params", "event_params", "event_params"],
+        "measured_per": ["event", "event", "event"],
         "coverage_rate": [0.92, 0.92, 0.73],
     })
 
@@ -230,3 +233,21 @@ def test_adds_holiday_name_to_date():
 
     assert format_day_with_holiday("20201224", holidays) == "Dec 24, 2020 (Christmas Eve)"
     assert format_day_with_holiday("20201105", holidays) == "Nov 5, 2020"
+
+
+def test_field_gaps_uses_the_plans_measurement():
+    required = pd.DataFrame({
+        "event_name": ["add_to_cart"],
+        "field_name": ["quantity"],
+        "measured_per": ["event"],
+    })
+    coverage = pd.DataFrame({
+        "event_name": ["add_to_cart", "add_to_cart"],
+        "field_name": ["quantity", "quantity"],
+        "measured_per": ["product", "event"],
+        "coverage_rate": [0.06, 0.64],
+    })
+
+    gaps = find_field_gaps(required, coverage)
+
+    assert list(gaps["coverage_rate"]) == [0.64]

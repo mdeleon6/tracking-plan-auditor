@@ -1,35 +1,39 @@
-# `quantity` is missing for 94.4174% of products in `add_to_cart` events (date range not given)
+# 36.3545% of add_to_cart events are missing `quantity` on the added product
 
 **Event:** add_to_cart
 **Found by:** · **Date found:** · **Severity:** Medium
 
 ## Description
-An automated check measures how often required fields are filled in. It flags any field with coverage below 0.99. It flagged the `quantity` field on the `add_to_cart` event.
+A required field coverage check flagged the `add_to_cart` event because the `quantity` field is missing on many events. This field sits on the products inside the event (`items`) and is used to count units added to cart.
 
-`quantity` sits inside the `items` list and is measured per product. It is filled in for only a small share of products added to cart, so most cart additions do not record how many units were added.
+The tracking plan expects `quantity` on one product per event, the product that was actually added. The check counts an event as covered if at least one of its products has `quantity`. Under that rule, 36.3545% of `add_to_cart` events have no product with `quantity`.
 
-The check results do not include a date range, event or product counts, or a breakdown by day, platform or product. It is not known whether the gap covers the whole period or only part of it.
+The check results do not include a date range, event counts, or a day-by-day breakdown. It is therefore not yet known when the problem started, whether it is ongoing, or how many events are affected.
 
 ## Evidence
-- Field: `quantity`. Location: `items`, measured per product.
-- Coverage rate: 0.055826. The flag threshold is 0.99.
-- Share of products missing `quantity`: 94.4174%.
-- Gap to threshold: 93.4174 percentage points.
-- The check results list "units added to cart" as the metric that uses this field.
-- Missing from the check results: the date range, the number of products checked and the number missing `quantity`.
+- Check: required field coverage. A field is flagged when its coverage is below 0.99.
+- Flagged field: `quantity` (location: `items`, measured per event).
+- Coverage rate for `quantity`: 0.636455.
+- Share of `add_to_cart` events missing `quantity`: 36.3545%.
+- Gap to threshold: 35.3545 percentage points.
+- The check results do not include:
+  - the date range checked
+  - total or affected event counts
+  - a breakdown by day or by any other dimension
 
 ## Impact
-"Units added to cart" depends on `quantity`. With the field missing for 94.4174% of products, that total cannot be relied on for the checked period. Any breakdown of units added to cart by product, category or other dimension is affected in the same way.
+Units added to cart cannot be trusted. That total depends on `quantity`, and more than a third of `add_to_cart` events do not carry it. Any total, trend or breakdown built on units added to cart will be incomplete. The size of the effect on that total is not known, because the check results do not include event counts or quantities.
 
-The severity is Medium because "units added to cart" is a secondary total. It is not one of the key business numbers such as revenue, orders, units sold or conversion rates. The check results do not show that any key business number depends on `quantity` in `add_to_cart`. If a team uses this field to calculate a key number, the severity should be reassessed. The check results do not give a severity from the tracking plan.
+This is Medium rather than High. The check results list units added to cart as the only use of this field. Units added to cart is a secondary total and is not one of the key business numbers such as revenue, orders, units sold or conversion rates. The check results show no key business number that depends on `quantity` in `add_to_cart`. If another report turns out to use this field for a key number, the severity should be reviewed.
 
 ## Suggested next steps
-- Get the date range the check covered and the counts behind the 0.055826 coverage rate.
-- Look at coverage by day to see whether `quantity` was never sent, stopped at some point, or has always been sent only in some cases.
-- Compare the products that have `quantity` with those that do not, for example by platform, app version, page or product type, to find what the populated cases have in common.
-- Confirm with the owners of the tracking plan whether `quantity` is meant to be sent with every product in `add_to_cart`. A possible, unconfirmed explanation is that the field is only set up in some places where products can be added to cart. This needs checking before any fix is chosen.
-- Find any reports or dashboards that show units added to cart, and tell their users the figure is not reliable until this is fixed.
+- Get the date range the check covered, plus total and affected event counts, so the size of the problem can be stated in events rather than only as a rate.
+- Break down missing `quantity` by day. This will show whether the gap began on a specific date or has been present throughout.
+- Compare events that have `quantity` with events that lack it, using any available dimensions such as platform or page. The goal is to find what the affected events have in common. This would only describe the pattern and would not confirm a cause.
+- Confirm with whoever owns the tracking plan how `quantity` should be sent on `add_to_cart`. Also confirm whether the item that was actually added should always include it.
+- Until the field is fixed, agree how reports should treat events missing `quantity`. Do not assume a default value without confirming it with the owner of the tracking plan.
 
 ## Acceptance criteria
-- `quantity` coverage on products in `add_to_cart` events is at or above 0.99, and the required field coverage check no longer flags it.
-- The period affected by the gap is documented, so that analyses of units added to cart can exclude or label it.
+- Every `add_to_cart` event includes `quantity` on the product that was actually added.
+- The required field coverage check for `quantity` on `add_to_cart` reaches at least 0.99, so the field is no longer flagged.
+- The date range affected by the missing `quantity` is identified and documented, so analyses of units added to cart can exclude or flag that period.

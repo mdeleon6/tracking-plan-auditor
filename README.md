@@ -24,7 +24,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 ## How it works
 **Working now**
 - Compares the tracking plan with the data: planned events that never arrive, events missing from the plan, and deprecated events still being sent
-- Checks that required `event_params`, `items` and `ecommerce` fields are present on at least 99% of their events or products
+- Checks that required `event_params`, `items` and `ecommerce` fields are present on at least 99% of their events or products. The plan sets how each field is measured, so a field expected on one product per event (e.g. add_to_cart `quantity`) is checked per event
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday. Typical counts ignore days with no data, and some false alarms are expected around holidays
 - Turns field gaps, missing days and low-volume days into problem descriptions and drafts a ticket for each with Claude, which must label any possible cause as unconfirmed and cannot calculate numbers. Days when many events drop together become one ticket
@@ -36,7 +36,6 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 **Planned**
 - Check data types
 - Extend planted bugs testing to the field checks
-- Measure coverage per event for fields expected on one product per event (e.g. add_to_cart `quantity`), since per-product rates overstate the gap
 - Check that country and platform are filled in, since stakeholder reports break conversion down by them
 - Count the records missing two fields together, so linked gaps are backed by evidence even when their overall rates differ
 

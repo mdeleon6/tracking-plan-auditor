@@ -22,7 +22,7 @@ def find_field_gaps(
     min_coverage: float = 0.99,
 ) -> pd.DataFrame:
     """Return required fields whose coverage is below min_coverage."""
-    merged = required.merge(coverage, on=["event_name", "field_name"], how="left")
+    merged = required.merge(coverage, on=["event_name", "field_name", "measured_per"], how="left")
     merged["coverage_rate"] = merged["coverage_rate"].fillna(0)
     return merged[merged["coverage_rate"] <min_coverage]
 
@@ -80,10 +80,12 @@ def run_field_check() -> pd.DataFrame:
     params_sql = Path(__file__).parent / "queries" / "07_field_coverage.sql"
     items_sql = Path(__file__).parent / "queries" / "17_items_field_coverage.sql"
     ecommerce_sql = Path(__file__).parent / "queries" / "18_ecommerce_field_coverage.sql"
+    per_event_sql = Path(__file__).parent / "queries" / "19_items_field_coverage_per_event.sql"
     coverage = pd.concat([
-        run_query(load_sql(params_sql)),
-        run_query(load_sql(items_sql)),
-        run_query(load_sql(ecommerce_sql)),
+        run_query(load_sql(params_sql)).assign(measured_per="event"),
+        run_query(load_sql(items_sql)).assign(measured_per="product"),
+        run_query(load_sql(ecommerce_sql)).assign(measured_per="event"),
+        run_query(load_sql(per_event_sql)).assign(measured_per="event"),
     ])
     plan_path = Path(__file__).parent / "tracking_plan" / "event_fields.csv"
     plan = pd.read_csv(plan_path)
@@ -91,7 +93,7 @@ def run_field_check() -> pd.DataFrame:
         (plan["required"] == "yes")
         & (plan["location"].isin(["event_params", "items", "ecommerce"]))
         & (plan["status"] == "active")
-    ][["event_name", "field_name","location"]]
+    ][["event_name", "field_name","location", "measured_per"]]
 
     return find_field_gaps(required, coverage)
 
