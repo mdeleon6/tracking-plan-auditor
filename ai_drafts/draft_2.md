@@ -1,56 +1,52 @@
-# 2.4788% of products in begin_checkout events are missing item_id, item_name, item_category, price and quantity
+# 2.4788% of products in `begin_checkout` events are missing `item_id`, `item_name`, `item_category`, `price` and `quantity`
 
 **Event:** begin_checkout
 **Found by:** · **Date found:** · **Severity:** Medium
 
 ## Description
-An automated check confirms that required fields are filled in. It flags any field filled in for less than 0.99 of records, which is 99%. In the `begin_checkout` event, five product fields inside the `items` list fall below this threshold. Each one is filled in for 0.975212 of products, so 2.4788% of products are missing it. This is 1.4788 percentage points short of the threshold.
+`begin_checkout` events record when a user starts checkout. Each event carries a list of the products in the cart, called `items`. The required field coverage check flags a field when its coverage is below 0.99.
 
-The check measures these fields for each product, not each event. A `begin_checkout` event that contains several products is counted once for each product.
+Five product-level fields inside `items` are below that threshold: `item_id`, `item_name`, `item_category`, `price` and `quantity`. Each has a coverage rate of 0.975212, which means 2.4788% of products are missing that field.
 
-All five fields have exactly the same coverage. This could mean the same products are missing all five fields, but that has not been confirmed. The cause is also unknown.
+The check measures coverage per product, not per checkout event. The check results do not show how many checkout events contain at least one affected product.
 
-## Evidence (date range not provided)
-- Check: required field coverage. Threshold is 0.99.
-- Event: `begin_checkout`
-- All of these fields are in `items` and measured per product, each with coverage of 0.975212:
-  - `item_id`
-  - `item_name`
-  - `item_category`
-  - `price`
-  - `quantity`
-- Share of products missing each field: 2.4788%.
-- Gap to threshold: 1.4788 percentage points.
-- **Missing from the input:**
-  - The date range checked.
-  - The total number of products or events checked.
-  - The count of affected products.
-  - Whether the same products are missing all five fields.
-  - Any daily breakdown showing when the problem started.
+All five fields have the same coverage rate. This could mean that the same product entries are missing all five fields together, but the check results do not confirm it. The check results also give no cause, and the matching rates do not prove the five gaps share one cause.
+
+## Evidence
+- Check: required field coverage, with a threshold of 0.99.
+- Event: `begin_checkout`. Fields are in `items` and measured per product.
+- `item_id`: coverage_rate 0.975212.
+- `item_name`: coverage_rate 0.975212.
+- `item_category`: coverage_rate 0.975212.
+- `price`: coverage_rate 0.975212.
+- `quantity`: coverage_rate 0.975212.
+- Share of products missing each field: 2.4788%. Gap to threshold: 1.4788 percentage points.
+- The following are not included in the check results:
+  - the date range the check covered
+  - the number of products or events checked
+  - the number of products with missing values
+  - a breakdown by day or by any other dimension
 
 ## Impact
-Product-level checkout analysis is incomplete. About 2.4788% of products in checkouts have no `item_id`, `item_name` or `item_category`. These products cannot be identified or grouped, so they will be left out of reports such as:
-- checkouts by product or category
-- product drop-off between checkout and purchase
+According to the check results, these fields are used in the following analyses:
+- **Checkout funnel by exact product version** (for example colour or size), which uses `item_id`. Products without an ID cannot be assigned to a version.
+- **Checkout funnel by product name** (all versions grouped), which uses `item_name`.
+- **Checkout funnel by category**, which uses `item_category`.
+- **Value of carts entering checkout**, which uses `price`. Products without a price cannot add value to this total.
+- **Units entering checkout**, which uses `quantity`. Products without a quantity cannot add units to this total.
 
-The missing `price` and `quantity` could also lower any checkout value that is calculated from the items. It is not known whether an event-level value field exists or is affected.
+Any of these analyses that includes affected products may show incomplete or unassigned results. The size of the effect on each analysis cannot be stated, because the check results do not include counts.
 
-The severity is Medium rather than High for two reasons:
-- The problem is limited to product breakdowns within `begin_checkout`.
-- The input does not show any effect on revenue, orders or overall conversion rates.
-
-The count of `begin_checkout` events should still be correct, because the gaps are in product fields, not in the event itself. This has not been verified. If checkout value or conversion rates are calculated from the item fields, the severity should be reviewed again.
+**Why Medium:** The affected uses are product, name and category breakdowns of the checkout funnel, plus checkout-stage totals: cart value entering checkout and units entering checkout. None of the uses listed in the check results are revenue, orders, units sold or overall conversion rates. The check results do not show whether any of those key numbers draw on these `begin_checkout` fields. If one does, this rating should be raised to High.
 
 ## Suggested next steps
-- Get the date range, the total number of products checked and the count of affected products for this check.
-- Confirm whether the same products are missing all five fields, or whether different products are missing different fields.
-- Break the affected products down by day to find out whether the problem started on a specific date or has always existed.
-- Look for anything the affected products have in common, such as:
-  - platform or app version
-  - product type
-  - checkout entry point
-- Confirm whether any checkout value or conversion metric is calculated from `price` and `quantity` in `items`.
+- Find out the date range the check covered, and whether the missing values are spread across that period or concentrated on particular days.
+- Check whether the same product entries are missing all five fields, or whether different products are missing different fields.
+- Look for anything the affected product entries have in common, such as specific products, categories, platforms or app versions.
+- Confirm whether any revenue, order, units-sold or conversion-rate reporting uses `item_id`, `item_name`, `item_category`, `price` or `quantity` from `begin_checkout`. Adjust the severity if it does.
+- Check whether products sent in other ecommerce events are missing these same fields.
 
 ## Acceptance criteria
-- `item_id`, `item_name`, `item_category`, `price` and `quantity` in `begin_checkout` `items` each reach at least 0.99 coverage on this check. The target is for every product to have all five fields.
-- Any product analysis that uses these fields records the known gap, or excludes the affected period once the date range has been confirmed.
+- `item_id`, `item_name`, `item_category`, `price` and `quantity` each have a coverage rate of at least 0.99 in `begin_checkout` on the required field coverage check.
+- The cause of the missing values is identified and documented, along with the period affected.
+- Teams using the product, name or category checkout funnels, or the cart value and units entering checkout, are told about the period with incomplete product data.

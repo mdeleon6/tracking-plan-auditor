@@ -100,10 +100,11 @@ def test_groups_fields_with_same_event_and_rate():
         "coverage_rate": [0.92, 0.92, 0.73],
     })
 
-    problems = describe_field_gaps(gaps)
+    problems = describe_field_gaps(gaps, {("purchase", "value"): "revenue"})
 
     assert len(problems) == 2
     assert any("Gap to threshold: 7.0 percentage points" in p for p in problems)
+    assert any("used in: revenue" in p for p in problems)
 
 
 def test_flags_numbers_not_in_the_input():

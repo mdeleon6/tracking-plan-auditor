@@ -1,46 +1,58 @@
-# 2.7995% of products in purchase events are missing item details (date range not provided)
+# 2.7995% of products in purchases are missing item details (`item_id`, `item_name`, `item_category`, `price`, `quantity`)
 
 **Event:** purchase
-**Found by:** · **Date found:** · **Severity:** Medium
+**Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-An automated check found that some products inside `purchase` events are missing required item details. Five fields in the `items` list (`item_id`, `item_name`, `item_category`, `price` and `quantity`) each have a coverage rate of 0.972005, so 2.7995% of products are missing each field. The check flags any field with coverage below 0.99, so each field falls 1.7995 percentage points short.
+An automated check confirms that each `purchase` event records five required fields for every product it contains. For each of these fields, 2.7995% of products are missing a value:
 
-This is measured per product, not per purchase event. A single purchase can contain several products, so the number of affected purchase events is not known from this input.
+- `item_id`
+- `item_name`
+- `item_category`
+- `price`
+- `quantity`
 
-All five fields have the same coverage rate. This suggests the gaps may be on the same products, but the input does not confirm it. It is possible that different products are missing different fields.
+All five fields have a coverage rate of 0.972005. The check flags a field when coverage is below 0.99, so each of these fields is 1.7995 percentage points below the threshold.
+
+The five fields have the same coverage rate. This suggests the same products may be missing all five fields, but this is possible and unconfirmed. The check results report each field separately and do not show whether the missing values fall on the same products. They also do not give a cause.
 
 ## Evidence
-- Check: required field coverage, threshold 0.99.
-- Event: `purchase`. Location: `items`, measured per product.
-- `item_id`: coverage 0.972005
-- `item_name`: coverage 0.972005
-- `item_category`: coverage 0.972005
-- `price`: coverage 0.972005
-- `quantity`: coverage 0.972005
-- Share missing each field: 2.7995%. Gap to threshold: 1.7995 percentage points.
-- The input does not include:
+- Check: required field coverage. Threshold: 0.99.
+- Coverage rate for `item_id`, `item_name`, `item_category`, `price` and `quantity`: 0.972005.
+- Share of products missing each field: 2.7995%.
+- Gap to threshold: 1.7995 percentage points.
+- All fields sit in `items` and are measured per product.
+- **Missing from the check results:**
   - The date range checked.
-  - The total number of products or purchase events.
-  - The count of affected products.
-  - A breakdown by day.
-  - Whether the same products are missing all five fields.
+  - The number of products and `purchase` events checked.
+  - The number of products affected.
+  - How the missing values are spread across days.
 
 ## Impact
-For the affected products there is no way to identify the product (`item_id`, `item_name`), group it (`item_category`), or value it (`price`, `quantity`). Any product-level analysis will undercount by these products. This includes top sellers, category sales, units sold and average item price.
+This is **High** because `quantity` feeds **units sold**, which is a key business number. Units sold cannot be fully trusted while some products are missing `quantity`.
 
-**Severity is Medium.** The gaps are in product-level fields inside the `items` list. The purchase events themselves are still present, so counts of purchases are not affected by this check. Product and category breakdowns are the type of analysis affected.
+According to the check results, the missing fields are also used in:
+- **`price`:** revenue by product and average selling price.
+- **`quantity`:** revenue by product.
+- **`item_id`:** revenue and units by exact product version, such as colour or size.
+- **`item_name`:** revenue and units by product name, grouping all versions.
+- **`item_category`:** revenue by category.
 
-**Severity should be raised to High if any revenue total is built from item `price` × `quantity`.** In that case, revenue totals would be missing the value of these products. The input does not show whether an event-level revenue field exists, or whether it was checked. This needs to be confirmed.
+Products missing these fields cannot be placed in these breakdowns, so the breakdowns will be incomplete.
+
+The check results do not say whether total revenue is calculated from item-level `price` and `quantity`. Do not assume total revenue is unaffected until this is confirmed.
 
 ## Suggested next steps
-- Confirm the date range of the check. Get the count of affected products and purchase events.
-- Check whether the same products are missing all five fields, or whether the gaps are spread across different products.
-- Break down the missing rate by day to see whether this started at a specific point or has been ongoing.
-- Look for anything the affected products or purchases have in common, such as platform, app version, product type or page.
-- Confirm how revenue is reported. Is it from an event-level field or from item `price` and `quantity`? Use the answer to settle the severity.
+- Confirm whether the same products are missing all five fields, or whether different products are missing different fields.
+- Get the information the check results do not include:
+  - The date range.
+  - The number of products and events checked.
+  - The number of affected products.
+  - A day-by-day view of the missing values.
+- Check whether the affected products have anything in common, so the source can be found.
+- Confirm whether total revenue is calculated from item-level `price` and `quantity`, or from a separate event-level value.
 
 ## Acceptance criteria
-- `item_id`, `item_name`, `item_category`, `price` and `quantity` each have coverage of at least 0.99 in the `items` list of `purchase` events.
-- The date range, affected counts and day-by-day breakdown are added to this ticket.
-- Severity is confirmed as Medium or raised to High, based on how revenue is reported.
+- `item_id`, `item_name`, `item_category`, `price` and `quantity` each have a coverage rate of at least 0.99 on `purchase` events, measured per product.
+- The date range and the number of affected products are recorded on this ticket.
+- Any report of units sold, revenue by product, revenue by category or average selling price for the affected period notes that some products are missing these fields.

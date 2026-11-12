@@ -1,51 +1,65 @@
-# `click` events fell below half of typical daily volume on 13 days between Dec 26, 2020 and Jan 31, 2021
+# `click` events fell below half of their typical daily count on 13 days from Dec 26, 2020 to Jan 31, 2021
 
 **Event:** click
 **Found by:** · **Date found:** · **Severity:** Low
 
 ## Description
-The low-volume check flagged the `click` event on 13 days between Dec 26, 2020 and Jan 31, 2021. On each of these days the event count was below 0.5 of its typical count. The typical count is the median for that weekday.
+An automated low-volume check flagged the `click` event on 13 days between Dec 26, 2020 and Jan 31, 2021. The check flags a day when the event's count is below 0.5 of its typical count. "Typical" means the median count for that weekday.
 
-The check results do not show whether these low counts reflect fewer real clicks or clicks that were not received. The event did not stop arriving entirely. The lowest flagged day still recorded 1 event.
+On each flagged day, the check results show only a few `click` events, between 1 and 7. The typical counts for those days are between 8 and 16. Two flagged days are in late December 2020, and the rest are spread through January 2021.
 
-Daily volumes for this event are small. Typical counts on the flagged days range from 8 to 16. A drop of a few events can therefore fall below the threshold. This is a possible explanation that has not been confirmed.
+The check results only show how many events were received. They do not show whether fewer clicks actually happened or whether clicks happened and were not recorded. The cause is unknown.
 
 ## Evidence (Dec 26, 2020 – Jan 31, 2021)
-- Dec 26, 2020: 4 events, typical 9, 44.4% of typical
-- Dec 27, 2020: 3 events, typical 8, 37.5% of typical
-- Jan 11, 2021: 7 events, typical 15, 46.7% of typical
-- Jan 13, 2021: 3 events, typical 13, 23.1% of typical
-- Jan 17, 2021: 1 events, typical 8, 12.5% of typical
-- Jan 19, 2021: 2 events, typical 16, 12.5% of typical
-- Jan 20, 2021: 5 events, typical 13, 38.5% of typical
-- Jan 21, 2021: 5 events, typical 11, 45.5% of typical
-- Jan 22, 2021: 4 events, typical 15, 26.7% of typical
-- Jan 25, 2021: 5 events, typical 15, 33.3% of typical
-- Jan 27, 2021: 4 events, typical 13, 30.8% of typical
-- Jan 30, 2021: 4 events, typical 9, 44.4% of typical
-- Jan 31, 2021: 3 events, typical 8, 37.5% of typical
-- None of these 13 dates is on the holiday calendar in the tracking plan.
-- `click` was also below threshold on 5 more days, when many events dropped together. A separate multi-event ticket covers those days, and they are not part of this ticket:
-  - Dec 24, 2020 (Christmas Eve, widely observed)
-  - Dec 25, 2020 (Christmas Day, widely observed)
-  - Jan 1, 2021 (New Year's Day, widely observed)
-  - Jan 4, 2021
-  - Jan 18, 2021 (Martin Luther King Jr. Day, observed in the US only)
+| Date | Events received | Typical | % of typical |
+|---|---|---|---|
+| Dec 26, 2020 | 4 | 9 | 44.4% |
+| Dec 27, 2020 | 3 | 8 | 37.5% |
+| Jan 11, 2021 | 7 | 15 | 46.7% |
+| Jan 13, 2021 | 3 | 13 | 23.1% |
+| Jan 17, 2021 | 1 | 8 | 12.5% |
+| Jan 19, 2021 | 2 | 16 | 12.5% |
+| Jan 20, 2021 | 5 | 13 | 38.5% |
+| Jan 21, 2021 | 5 | 11 | 45.5% |
+| Jan 22, 2021 | 4 | 15 | 26.7% |
+| Jan 25, 2021 | 5 | 15 | 33.3% |
+| Jan 27, 2021 | 4 | 13 | 30.8% |
+| Jan 30, 2021 | 4 | 9 | 44.4% |
+| Jan 31, 2021 | 3 | 8 | 37.5% |
 
-  For the named dates, the holiday is a possible, unconfirmed explanation. The 13 days in this ticket fall near some of those dates. That does not show they share a cause.
+- None of these 13 dates appears on the holiday calendar in the tracking plan.
+- `click` was also below the threshold on 5 more days. On those days many events dropped together, so they are covered in a separate multi-event ticket and are not part of this one:
+  - Dec 24, 2020 (Christmas Eve: widely observed)
+  - Dec 25, 2020 (Christmas Day: widely observed)
+  - Jan 1, 2021 (New Year's Day: widely observed)
+  - Jan 4, 2021
+  - Jan 18, 2021 (Martin Luther King Jr. Day: US only)
+- The check results do not include:
+  - `click` counts for days that were not flagged.
+  - The total `click` count for the period.
+  - The date range used to calculate the typical counts.
 
 ## Impact
-According to the tracking plan, `click` is used in outbound link reporting. Outbound link counts for the 13 flagged days will be lower than typical. Until the cause is known, those reports cannot show whether that reflects real behavior or incomplete tracking. Trends across late December and January may look weaker than usual.
+According to the tracking plan, `click` is used in outbound link reporting. The flagged days could make outbound link counts for late December 2020 and January 2021 look lower than usual. Any trend or comparison across this period could be affected.
 
-The tracking plan rates this event Low if it stopped arriving entirely. The event did not stop arriving, so Low is the highest severity allowed here. Under the severity rules, the problem affects one reporting area and has little effect on key business numbers such as revenue, orders or conversion rates. That also points to Low.
+Severity is Low for three reasons:
+- The tracking plan rates `click` as Low even if it stopped arriving entirely.
+- The flagged days involve only a few events each.
+- The check results do not tie `click` to any key business number such as revenue, orders, units sold or conversion rates.
+
+If outbound link reporting is used to make decisions, this should be reviewed as Medium.
+
+The flagged days are spread across most of January rather than isolated. This could mean a sustained drop, but that is possible and unconfirmed. The typical counts are also small, so day-to-day variation could push a day below the 0.5 threshold without any tracking problem. That is also possible and unconfirmed.
 
 ## Suggested next steps
-- Check whether the `click` tracking, or the outbound links it records, changed around Dec 26, 2020 or during January 2021.
-- Find out whether another source records outbound link clicks for the flagged days. If one exists, compare it with the received `click` counts to see whether the drop also appears there.
-- Check whether `click` counts returned to typical levels after Jan 31, 2021. The check results do not cover dates after Jan 31, 2021.
-- Look at the outcome of the separate multi-event ticket. It may help explain the January drops, but these days should be investigated on their own and not assumed to share its cause.
+- Find out whether anything changed in how `click` is tracked around late December 2020 or January 2021.
+- Pull daily `click` counts for the days in this period that were not flagged. This shows whether volume was lower across the whole period or only on the flagged days.
+- Compare `click` with related events on the same 13 days. This shows whether the drop affects only `click`.
+- Confirm with the users of outbound link reporting whether they rely on this period, to settle the severity.
 
 ## Acceptance criteria
-- The cause of the low counts on the 13 flagged days is identified and confirmed as either real behavior or a tracking problem.
-- If it is a tracking problem, the problem is fixed, and daily `click` counts stay at or above 0.5 of typical outside days covered by known multi-event drops.
-- Outbound link reports covering Dec 26, 2020 – Jan 31, 2021 carry a note about the flagged days until the cause is confirmed.
+- Each of the 13 flagged days has one of these outcomes:
+  - It is confirmed as real behavior, and the evidence is recorded on this ticket.
+  - Its tracking issue is identified, and the counts are corrected where possible.
+- If a tracking issue is found, a re-run of the low-volume check over the same period no longer flags `click` on days where the issue was fixed.
+- Outbound link reporting for Dec 26, 2020 to Jan 31, 2021 includes a note about these days until they are resolved.

@@ -1,16 +1,18 @@
-# add_to_cart volume below half of typical on 6 days between Nov 1, 2020 and Jan 3, 2021
+# add_to_cart volume fell below half of its typical level on 6 days between Nov 1, 2020 and Jan 3, 2021
 
 **Event:** add_to_cart
 **Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-On 6 days, the `add_to_cart` event arrived at less than half its usual volume. The low-volume check flags a day when the event's count is below 0.5 of its typical count. "Typical" means the median count for that weekday.
+An automated low-volume check flagged 6 days on which the `add_to_cart` event arrived in much smaller numbers than usual. The check flags a day when the event's count is below 0.5 of its typical count. "Typical" is the median count for that weekday.
 
-Five of the flagged days fall in November 2020, and one falls on Jan 3, 2021. On two days, Nov 1 and Nov 20, 2020, almost no events arrived (0.8% and 2.6% of typical). The other days arrived at between 14.5% and 48.4% of typical.
+On the worst flagged days, almost no events were received. Nov 1, 2020 had 4 events, which is 0.8% of typical. Nov 20, 2020 had 15 events, which is 2.6% of typical. The other flagged days ranged from 14.5% to 48.4% of typical.
 
-The check results only show how many events were received. They do not show whether add-to-cart activity actually dropped on these days or whether events were not received.
+Five of the six flagged days fall right next to periods when `add_to_cart` had no data at all: Nov 2–15, 2020 and Nov 21–24, 2020. Those empty days are covered in a separate missing-day ticket and are not part of this one. One possible but unconfirmed explanation is that some flagged days are partial days at the start or end of those gaps. Days that sit next to each other do not prove that they share a cause.
 
-This event also has days with no data at all, from Nov 2 to Nov 15, 2020 and from Nov 21 to Nov 24, 2020. Those days are covered in a separate missing-day ticket and are not part of this one.
+Jan 3, 2021 is not next to any of the listed gaps. It may need to be looked at on its own.
+
+None of the flagged dates appear on the holiday calendar in the tracking plan.
 
 ## Evidence (Nov 1, 2020 – Jan 3, 2021)
 - Nov 1, 2020: 4 events, typical 473, 0.8% of typical
@@ -19,29 +21,24 @@ This event also has days with no data at all, from Nov 2 to Nov 15, 2020 and fro
 - Nov 20, 2020: 15 events, typical 572, 2.6% of typical
 - Nov 25, 2020: 297 events, typical 665, 44.7% of typical
 - Jan 3, 2021: 229 events, typical 473, 48.4% of typical
-- None of these dates are named on the holiday calendar in the tracking plan.
-- Four of the flagged days fall right next to the missing-day periods:
-  - Nov 1 is the day before Nov 2–15.
-  - Nov 16 is the day after Nov 2–15.
-  - Nov 20 is the day before Nov 21–24.
-  - Nov 25 is the day after Nov 21–24.
-  
-  This is an observation only. It has not been confirmed that the low volume and the missing days share a cause.
+- Days with no `add_to_cart` data at all, handled in a separate ticket: Nov 2–15, 2020 and Nov 21–24, 2020.
+- Not in the check results: how many weeks each weekday median is based on, and the counts of related events such as purchases or checkouts on these days.
 
 ## Impact
-The tracking plan uses `add_to_cart` in the add-to-cart rate, the cart-to-purchase conversion rate and the checkout funnel. These are key business numbers.
+According to the tracking plan, `add_to_cart` is used in the add-to-cart rate, the cart-to-purchase conversion rate and the checkout funnel. On the flagged days, the check results only show that far fewer events were received than usual. They do not show whether fewer people actually added items to their carts or whether events were not recorded.
 
-On the flagged days, the add_to_cart counts are far below normal. Until someone confirms whether these counts reflect real activity, those three numbers cannot be trusted for these days. The same applies to any period that includes these days, such as weekly or monthly figures for November 2020 and early January 2021.
+Until that is known, both conversion rates and the checkout funnel cannot be trusted for these dates. This also applies to any weekly or monthly figure that includes these dates. If events were not recorded, the add-to-cart rate would look too low. The cart-to-purchase conversion rate would also look distorted, because purchases would be divided by an incomplete cart count.
 
-The tracking plan rates this event High if it stopped arriving entirely. For a low-volume problem, that rating is the highest severity allowed. This ticket is rated High because conversion rates and the funnel built on this event cannot be trusted for the affected days.
+Conversion rates are key business numbers, so this is High. The tracking plan also rates the loss of this event as High.
 
 ## Suggested next steps
-- For each of the 6 days, confirm whether all `add_to_cart` events were received, or whether real add-to-cart activity was low.
-- Check whether other events in the checkout funnel also show low volume on these same days. This would show whether the drop affects `add_to_cart` alone.
-- Review the 4 flagged days next to the missing-day periods together with the separate missing-day ticket. The goal is to see whether they may be related. That link is possible but unconfirmed.
-- Look at Nov 19 and Jan 3, 2021 separately. They do not border a missing-day period.
+- Find out whether any tracking releases, site changes or collection outages happened on or around each flagged date. This is especially important for the days next to the Nov 2–15 and Nov 21–24 gaps.
+- Compare other events on the same six days. This will show whether the drop affects only `add_to_cart` or tracking in general.
+- Look into Jan 3, 2021 on its own, since it does not sit next to a known gap.
+- Check whether `add_to_cart` events for these days could still arrive late or be recovered. If they are recovered, rerun the low-volume check.
+- Coordinate with the owner of the missing-day ticket. If a shared cause is confirmed, the two tickets can be linked.
 
 ## Acceptance criteria
-- Each of the 6 flagged days has a documented explanation. Either the low count is confirmed as real activity, or the events that were not received are identified.
-- Where events were not received and can be recovered, the low-volume check no longer flags that day after the data is updated.
-- Any day that stays below 0.5 of typical and cannot be explained is clearly noted for anyone using the add-to-cart rate, the cart-to-purchase conversion rate or the checkout funnel.
+- Each of the 6 flagged days has a confirmed explanation. Either the day reflects real user behavior, or the events were not recorded.
+- Where events were not recorded and can be recovered, the day's count is no longer flagged by the low-volume check after the data is restored.
+- Where events cannot be recovered, the affected dates are documented. Reports using the add-to-cart rate, the cart-to-purchase conversion rate or the checkout funnel either exclude these dates or clearly mark them as unreliable.

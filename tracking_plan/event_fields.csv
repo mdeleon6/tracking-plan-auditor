@@ -1,31 +1,31 @@
-event_name,field_name,location,type,required,field_role,status
-purchase,transaction_id,event_params,string,yes,id,active
-purchase,value,event_params,number,yes,metric,active
-purchase,purchase_revenue,ecommerce,number,yes,metric,active
-purchase,currency,event_params,string,yes,dimension,active
-purchase,tax,event_params,number,yes,metric,active
-purchase,payment_type,event_params,string,yes,dimension,active
-purchase,shipping_tier,event_params,string,yes,dimension,active
-purchase,coupon,event_params,string,no,dimension,active
-purchase,promotion_name,event_params,string,no,dimension,active
-purchase,page_location,event_params,string,yes,dimension,active
-purchase,ga_session_id,event_params,number,yes,id,active
-page_view,page_location,event_params,string,yes,dimension,active
-add_to_cart,item_id,items,string,yes,id,active
-add_to_cart,item_name,items,string,yes,dimension,active
-add_to_cart,item_category,items,string,yes,dimension,active
-add_to_cart,item_variant,items,string,no,dimension,active
-add_to_cart,price,items,number,yes,metric,active
-add_to_cart,quantity,items,number,yes,metric,active
-add_to_cart,page_location,event_params,string,yes,dimension,active
-add_to_cart,ga_session_id,event_params,number,yes,id,active
-purchase,item_id,items,string,yes,id,active
-purchase,item_name,items,string,yes,dimension,active
-purchase,item_category,items,string,yes,dimension,active
-purchase,price,items,number,yes,metric,active
-purchase,quantity,items,number,yes,metric,active
-begin_checkout,item_id,items,string,yes,id,active
-begin_checkout,item_name,items,string,yes,dimension,active
-begin_checkout,item_category,items,string,yes,dimension,active
-begin_checkout,price,items,number,yes,metric,active
-begin_checkout,quantity,items,number,yes,metric,active
+event_name,field_name,location,type,required,field_role,status,used_in
+page_view,page_location,event_params,string,yes,dimension,active,"page views by page, top pages, landing pages"
+add_to_cart,item_id,items,string,yes,id,active,"add-to-cart by exact product version, such as colour or size"
+add_to_cart,item_name,items,string,yes,dimension,active,"add-to-cart by product name, grouping all versions"
+add_to_cart,item_category,items,string,yes,dimension,active,add-to-cart by category
+add_to_cart,item_variant,items,string,no,dimension,active,add-to-cart by size or colour
+add_to_cart,price,items,number,yes,metric,active,value of items added to cart
+add_to_cart,quantity,items,number,yes,metric,active,units added to cart
+add_to_cart,page_location,event_params,string,yes,dimension,active,add-to-cart by page
+add_to_cart,ga_session_id,event_params,number,yes,id,active,"add-to-cart rate per session, linking cart adds to purchases in the same session"
+begin_checkout,item_id,items,string,yes,id,active,"checkout funnel by exact product version, such as colour or size"
+begin_checkout,item_name,items,string,yes,dimension,active,"checkout funnel by product name, grouping all versions"
+begin_checkout,item_category,items,string,yes,dimension,active,checkout funnel by category
+begin_checkout,price,items,number,yes,metric,active,value of carts entering checkout
+begin_checkout,quantity,items,number,yes,metric,active,units entering checkout
+purchase,transaction_id,event_params,string,yes,id,active,"order counts, removing duplicate purchases, matching orders to the order system"
+purchase,value,event_params,number,yes,metric,active,"revenue, average order value"
+purchase,purchase_revenue,ecommerce,number,yes,metric,active,"revenue, average order value"
+purchase,currency,event_params,string,yes,dimension,active,"revenue in a single currency, revenue by currency"
+purchase,tax,event_params,number,yes,metric,active,revenue before and after tax
+purchase,payment_type,event_params,string,yes,dimension,active,orders and revenue by payment type
+purchase,shipping_tier,event_params,string,yes,dimension,active,revenue and orders by shipping tier
+purchase,coupon,event_params,string,no,dimension,active,coupon and discount reporting
+purchase,promotion_name,event_params,string,no,dimension,active,revenue by promotion
+purchase,page_location,event_params,string,yes,dimension,active,checking purchases fire on the confirmation page
+purchase,ga_session_id,event_params,number,yes,id,active,"conversion rate per session, linking purchases to the session they came from"
+purchase,item_id,items,string,yes,id,active,"revenue and units by exact product version, such as colour or size"
+purchase,item_name,items,string,yes,dimension,active,"revenue and units by product name, grouping all versions"
+purchase,item_category,items,string,yes,dimension,active,revenue by category
+purchase,price,items,number,yes,metric,active,"revenue by product, average selling price"
+purchase,quantity,items,number,yes,metric,active,"units sold, revenue by product"

@@ -22,9 +22,9 @@ Only use numbers exactly as they appear in the input. Do not calculate, convert 
 Do not invent queries, code, file names, links or people.
 
 Choose severity by what the problem breaks, and give your reason in the Impact section:
-- High: totals or key business numbers cannot be trusted, such as revenue, orders or conversion rates.
-- Medium: one type of breakdown or analysis is affected, while totals are still correct.
-- Low: little effect on any decision. If the check results give a severity set by the tracking plan, use exactly that severity and explain in Impact what it affects. Do not change it or suggest changing it. If it says Not rated, write Not rated. For low-volume problems, the tracking plan rating applies only if an event stops arriving entirely. Treat it as the highest severity allowed, choose the severity with the rules above, and never go higher.
+- High: key business numbers cannot be trusted, such as revenue, orders, units sold or conversion rates.
+- Medium: a secondary total or one type of breakdown is affected, but no key business number depends on the missing data.
+- Low: too small to change any decision, such as a few events on a single day, or reporting nobody acts on.
 
 You will be given an example ticket inside <example_ticket> tags. Copy its sections, order and tone only. Never reuse its events, dates, numbers or references to past experience. Leave "Found by" and "Date found" blank for a person to fill in. Do not carry over any possible cause, impact, next step or acceptance criterion from the example. Do not reuse the example's wording or the questions it asks.
 
@@ -139,7 +139,7 @@ def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, sev
     return problems
 
 
-def describe_field_gaps(gaps: pd.DataFrame, min_coverage: float = 0.99) -> list[str]:
+def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], min_coverage: float = 0.99) -> list[str]:
     """Group field gaps into problem descriptions, one per event and coverage rate."""
     problems = []
     for (event_name, rate), rows in gaps.groupby(["event_name", "coverage_rate"]):
@@ -153,7 +153,8 @@ def describe_field_gaps(gaps: pd.DataFrame, min_coverage: float = 0.99) -> list[
         ]
         for _, row in rows.iterrows():
             unit = "product" if row["location"] == "items" else "event"
-            lines.append(f"- {row['field_name']} (location: {row['location']}, measured per {unit})")
+            used = uses.get((event_name, row["field_name"]), "not listed")
+            lines.append(f"- {row['field_name']} (location: {row['location']}, measured per {unit}; used in: {used})")
         problems.append("\n".join(lines))
     return problems
 
@@ -256,7 +257,7 @@ def describe_low_days_together(
 
 def draft_field_gap_tickets() -> None:
     gaps = run_field_check()
-    problems = describe_field_gaps(gaps)
+    problems = describe_field_gaps(gaps, load_field_uses())
     output_folder = Path(__file__).parent / "ai_drafts"
     output_folder.mkdir(exist_ok=True)
 
@@ -282,6 +283,13 @@ def load_event_uses() -> dict[str, str]:
     plan = pd.read_csv(plan_path)
     used = plan.dropna(subset=["used_in"])
     return dict(zip(used["event_name"], used["used_in"]))
+
+
+def load_field_uses() -> dict[tuple[str, str], str]:
+    """Read what each field is used in, keyed by (event, field)."""
+    plan_path = Path(__file__).parent / "tracking_plan" / "event_fields.csv"
+    plan = pd.read_csv(plan_path)
+    return dict(zip(zip(plan["event_name"], plan["field_name"]), plan["used_in"]))
 
 
 def load_holidays() -> dict[str, str]:
