@@ -30,13 +30,13 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Turns field gaps, missing days and low-volume days into problem descriptions and drafts a ticket for each with Claude, which must label any possible cause as unconfirmed and cannot calculate numbers. Days when many events drop together become one ticket
 - Flags any number in a draft that isn't in the check results. It can't tell if a number is used in the wrong place, so a person reviews every draft
 - Takes the severity of each missing-day ticket from the tracking plan, where the plan owner rates how serious it is if that event stops arriving
-- Tells Claude what each event feeds (from a `used_in` column in the plan, e.g. checkout conversion rate by country), so it judges low-volume severity from facts instead of guessing
+- Tells Claude what each event and field feeds (from `used_in` columns in the plan, e.g. checkout conversion rate by country, or revenue by product), so it judges severity from facts instead of guessing
 - Labels flagged days from a holiday calendar in the plan, including where each holiday is observed, since the store sells internationally. Claude treats holidays as context, not a cause
 
 **Planned**
 - Check data types
 - Extend planted bugs testing to the field checks
-- Add `used_in` for fields too, so field-gap tickets know which breakdowns a missing field breaks (e.g. no `payment_type` means no conversion rate by payment type)
+- Measure coverage per event for fields expected on one product per event (e.g. add_to_cart `quantity`), since per-product rates overstate the gap
 - Check that country and platform are filled in, since stakeholder reports break conversion down by them
 - Count the records missing two fields together, so linked gaps are backed by evidence even when their overall rates differ
 
