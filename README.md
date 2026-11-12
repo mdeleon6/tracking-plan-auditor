@@ -37,6 +37,8 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Check data types
 - Extend planted bugs testing to the field checks
 - Count the records missing two fields together, so linked gaps are backed by evidence even when their overall rates differ
+- A Streamlit app to run the checks and review Claude's drafts in one place
+- Support for data stored as one table per event, not only GA4's single shared table
 
 ## How well it works
 Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The low-volume check caught every drop of 70% or more, 2 of 9 at 55%, and none at 40% or below. Small test; low-volume events are noisier.
