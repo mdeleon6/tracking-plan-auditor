@@ -32,11 +32,11 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Takes the severity of each missing-day ticket from the tracking plan, where the plan owner rates how serious it is if that event stops arriving
 - Tells Claude what each event and field feeds (from `used_in` columns in the plan, e.g. checkout conversion rate by country, or revenue by product), so it judges severity from facts instead of guessing
 - Labels flagged days from a holiday calendar in the plan, including where each holiday is observed, since the store sells internationally. Claude treats holidays as context, not a cause
+- Counts purchases missing two required fields together, so linked gaps are backed by evidence (e.g. the same 450 purchases lack transaction_id, value, tax and payment_type, and all of them also lack shipping_tier)
 
 **Planned**
 - Check data types
 - Extend planted bugs testing to the field checks
-- Count the records missing two fields together, so linked gaps are backed by evidence even when their overall rates differ
 - A Streamlit app to run the checks and review Claude's drafts in one place
 - Support for data stored as one table per event, not only GA4's single shared table
 

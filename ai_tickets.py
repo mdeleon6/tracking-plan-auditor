@@ -3,7 +3,7 @@ import anthropic
 import pandas as pd
 import re
 from bq import load_sql, run_query
-from checks import find_low_days, find_missing_days, run_field_check
+from checks import find_low_days, find_missing_days, run_field_check, run_co_missing_check
 
 
 SYSTEM_PROMPT = """
@@ -139,7 +139,7 @@ def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, sev
     return problems
 
 
-def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], min_coverage: float = 0.99) -> list[str]:
+def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co_missing: pd.DataFrame, min_coverage: float = 0.99) -> list[str]:
     """Group field gaps into problem descriptions, one per event and coverage rate."""
     problems = []
     for (event_name, rate), rows in gaps.groupby(["event_name", "coverage_rate"]):
@@ -157,6 +157,17 @@ def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], mi
             lines.append(f"- {row['field_name']} (location: {row['location']}, measured per {unit}; used in: {used})")
         if ((rows["location"] == "items") & (rows["measured_per"] == "event")).any():
             lines.append("The tracking plan expects these fields on one product per event, the product actually added, so an event counts as covered if at least one of its products has the field.")
+        fields = set(rows["field_name"])
+        linked = co_missing[
+            (co_missing["event_name"] == event_name)
+            & (co_missing["missing_both"] > 0)
+            & (co_missing["field_a"].isin(fields) | co_missing["field_b"].isin(fields))
+        ]
+        for _, pair in linked.iterrows():
+            lines.append(
+                f"Records missing both {pair['field_a']} and {pair['field_b']}: {pair['missing_both']} "
+                f"({pair['field_a']} missing on {pair['missing_a']}, {pair['field_b']} missing on {pair['missing_b']})."
+            )
         problems.append("\n".join(lines))
     return problems
 
@@ -259,12 +270,12 @@ def describe_low_days_together(
 
 def draft_field_gap_tickets() -> None:
     gaps = run_field_check()
-    problems = describe_field_gaps(gaps, load_field_uses())
+    problems = describe_field_gaps(gaps, load_field_uses(), run_co_missing_check())
     output_folder = Path(__file__).parent / "ai_drafts"
     output_folder.mkdir(exist_ok=True)
 
     for number, problem in enumerate(problems, start=1):
-        if "shipping_tier" in problem:
+        if "- shipping_tier (" in problem:
             continue
         ticket = draft_ticket(problem)
         (output_folder / f"draft_{number}.md").write_text(ticket, encoding="utf-8")

@@ -1,47 +1,45 @@
-# 2.7995% of products in purchases are missing item_id, item_name, item_category, price and quantity
+# 2.7995% of purchased products are missing item_id, item_name, item_category, price and quantity
 
 **Event:** purchase
 **Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-Some products recorded inside `purchase` events arrive without five required item fields: `item_id`, `item_name`, `item_category`, `price` and `quantity`. These fields sit in the `items` list of each purchase and are measured per product.
+An automated check flags a required field when its coverage is below 0.99. On the `purchase` event, five fields on the products inside each purchase (the `items` list) fell below that level: `item_id`, `item_name`, `item_category`, `price` and `quantity`. Coverage is measured per product, not per purchase.
 
-A field is flagged when its coverage is below 0.99. All five fields have a coverage rate of 0.972005, so 2.7995% of products are missing each one.
-
-All five fields have the same coverage rate. The check results do not show whether the same products are missing all five fields or whether different products are missing different fields. The cause of the gap is unknown.
+All five fields have the same coverage of 0.972005, which means 2.7995% of products are missing each field. The check results do not show whether the same products are missing all five fields or whether different products are missing different ones. The matching rates alone do not prove a shared cause.
 
 ## Evidence
-- Check: required field coverage on the `purchase` event, with a threshold of 0.99.
-- Coverage rate for each flagged field: 0.972005.
-- Share missing for each field: 2.7995%.
-- Gap to threshold: 1.7995 percentage points.
-- Flagged fields, all in `items` and measured per product:
-  - `item_id`, used for revenue and units by exact product version, such as colour or size.
-  - `item_name`, used for revenue and units by product name, grouping all versions.
-  - `item_category`, used for revenue by category.
-  - `price`, used for revenue by product and average selling price.
-  - `quantity`, used for units sold and revenue by product.
-- The check results do not include:
+- Check: required field coverage, threshold 0.99.
+- Event: `purchase`. Location: `items`, measured per product.
+- `item_id`: coverage 0.972005.
+- `item_name`: coverage 0.972005.
+- `item_category`: coverage 0.972005.
+- `price`: coverage 0.972005.
+- `quantity`: coverage 0.972005.
+- Share of products missing each field: 2.7995%. Gap to threshold: 1.7995 percentage points.
+- Missing from the check results:
   - the date range checked
-  - a breakdown by day
-  - the number of products or purchases affected
-  - whether the missing values overlap across the five fields.
+  - the number of products and purchases checked
+  - the number of products missing each field
+  - whether the gaps are spread across all dates or concentrated on specific dates
 
 ## Impact
-This is **High** because `quantity` is used for units sold, which is a key business number. Products without a `quantity` cannot be counted reliably. Units sold totals that include this period cannot be trusted until the gap is understood.
+The check results list `quantity` as a field used for units sold. Units sold is a key business number, so it cannot be fully trusted while some products have no `quantity`. This is the reason for the High rating.
 
-Revenue by product, by product name and by category, along with average selling price, will be incomplete for the affected products. Products without `item_id`, `item_name` or `item_category` cannot be placed into those breakdowns. Products without `price` cannot contribute to price-based figures.
+The other fields affect these numbers, according to the check results:
+- `price`: revenue by product and average selling price.
+- `item_id`: revenue and units by exact product version, such as colour or size.
+- `item_name`: revenue and units by product name.
+- `item_category`: revenue by category.
 
-The check results do not say whether total revenue is calculated from these item fields or from a separate field. Until that is confirmed, do not assume total revenue is unaffected.
+The check results do not say whether total revenue is calculated from these product fields or from a separate field on the purchase. The effect on total revenue is not confirmed either way.
 
 ## Suggested next steps
-- Find out how many products and how many purchases are affected, and over what date range. None of this is in the check results.
-- Break the missing values down by day to see whether the gap is spread out or concentrated in a particular period.
-- Check whether the products missing one field are the same products missing the other four. That shows whether whole product entries are empty or fields are dropping independently.
-- Confirm how total revenue and units sold are calculated, and whether either depends on the item-level fields flagged here.
-- Look at the affected purchases for anything they share, such as a platform, app version or checkout path. Treat any pattern found as a lead to investigate, not a confirmed cause.
+- Find out whether the same products are missing all five fields or whether the gaps fall on different products.
+- Get the date range checked and break the missing values down by day. This shows whether the problem started on a specific date or has always been present.
+- Confirm whether total revenue and total units sold are built from `price` and `quantity` in `items`. This will show how far key numbers are affected.
+- Look for anything the affected products have in common, such as product type or how the purchase was made. No cause has been identified so far.
 
 ## Acceptance criteria
-- Every product in the `items` list of a `purchase` event has `item_id`, `item_name`, `item_category`, `price` and `quantity` filled in.
-- At minimum, each of the five fields has a coverage rate at or above 0.99 when the required field coverage check is re-run.
-- The affected date range and the number of affected purchases are documented. Anyone reporting units sold or product-level revenue for that range can then account for the gap.
+- `item_id`, `item_name`, `item_category`, `price` and `quantity` have coverage of at least 0.99 on every product in `purchase` events.
+- The affected date range and number of products are documented, so that reports on units sold and product-level revenue can note or correct the affected period.

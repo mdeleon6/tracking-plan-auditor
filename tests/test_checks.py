@@ -1,4 +1,4 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing
 from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days, split_low_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday
 import pandas as pd
 
@@ -99,15 +99,26 @@ def test_groups_fields_with_same_event_and_rate():
         "event_name": ["purchase", "purchase", "purchase"],
         "field_name": ["value", "tax", "shipping_tier"],
         "location": ["event_params", "event_params", "event_params"],
-        "measured_per": ["event", "event", "event"],
         "coverage_rate": [0.92, 0.92, 0.73],
+        "measured_per": ["event", "event", "event"],
+    })
+    co_missing = pd.DataFrame({
+        "event_name": ["purchase", "add_to_cart"],
+        "field_a": ["value", "value"],
+        "field_b": ["shipping_tier", "shipping_tier"],
+        "missing_a": [8, 3],
+        "missing_b": [27, 3],
+        "missing_both": [8, 3],
     })
 
-    problems = describe_field_gaps(gaps, {("purchase", "value"): "revenue"})
+    problems = describe_field_gaps(gaps, {("purchase", "value"): "revenue"}, co_missing)
 
     assert len(problems) == 2
     assert any("Gap to threshold: 7.0 percentage points" in p for p in problems)
     assert any("used in: revenue" in p for p in problems)
+    assert all("Records missing both value and shipping_tier: 8 " in p for p in problems)
+    assert not any(": 3 (" in p for p in problems)
+
 
 
 def test_flags_numbers_not_in_the_input():
@@ -251,3 +262,21 @@ def test_field_gaps_uses_the_plans_measurement():
     gaps = find_field_gaps(required, coverage)
 
     assert list(gaps["coverage_rate"]) == [0.64]
+    
+    
+def test_counts_records_missing_two_fields_together():
+    records = pd.DataFrame({
+        "keys": [
+            ["transaction_id", "shipping_tier"],
+            ["shipping_tier"],
+            [],
+            ["transaction_id"],
+        ],
+    })
+
+    result = find_co_missing(records, ["transaction_id", "shipping_tier"])
+    row = result.iloc[0]
+
+    assert row["missing_a"] == 2
+    assert row["missing_b"] == 2
+    assert row["missing_both"] == 1

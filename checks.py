@@ -1,6 +1,7 @@
 import pandas as pd
 from pathlib import Path
 from bq import load_sql, run_query
+from itertools import combinations
 
 
 def compare_events(planned: set[str], observed: set[str]) -> dict[str, set[str]]:
@@ -25,6 +26,24 @@ def find_field_gaps(
     merged = required.merge(coverage, on=["event_name", "field_name", "measured_per"], how="left")
     merged["coverage_rate"] = merged["coverage_rate"].fillna(0)
     return merged[merged["coverage_rate"] <min_coverage]
+
+
+def find_co_missing(records: pd.DataFrame, fields: list[str]) -> pd.DataFrame:
+    """For each pair of fields, count records missing one, the other, and both."""
+    missing = pd.DataFrame({
+        field: records["keys"].apply(lambda keys: field not in keys)
+        for field in fields
+    })
+    rows = []
+    for a, b in combinations(fields, 2):
+        rows.append({
+            "field_a": a,
+            "field_b": b,
+            "missing_a": int(missing[a].sum()),
+            "missing_b": int(missing[b].sum()),
+            "missing_both": int((missing[a] & missing[b]).sum()),
+        })
+    return pd.DataFrame(rows)
 
 
 def find_missing_days(daily: pd.DataFrame) -> dict[str, set[str]]:
@@ -98,6 +117,20 @@ def run_field_check() -> pd.DataFrame:
     ][["event_name", "field_name","location", "measured_per"]]
 
     return find_field_gaps(required, coverage)
+
+
+def run_co_missing_check() -> pd.DataFrame:
+    """Count purchases missing each pair of required event_params fields."""
+    sql_path = Path(__file__).parent / "queries" / "21_purchase_param_keys.sql"
+    records = run_query(load_sql(sql_path))
+    plan = pd.read_csv(Path(__file__).parent / "tracking_plan" / "event_fields.csv")
+    fields = plan[
+        (plan["event_name"] == "purchase")
+        & (plan["location"] == "event_params")
+        & (plan["required"] == "yes")
+        & (plan["status"] == "active")
+    ]["field_name"].tolist()
+    return find_co_missing(records, fields).assign(event_name="purchase")
 
 
 def run_volume_check() -> dict[str, set[str]]:
