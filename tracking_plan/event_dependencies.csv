@@ -1,0 +1,7 @@
+event_name,requires,reason
+select_item,view_item_list,an item can only be selected from a list that was shown
+select_promotion,view_promotion,a promotion can only be selected after it was shown
+add_shipping_info,begin_checkout,shipping details are entered during checkout
+add_payment_info,begin_checkout,payment details are entered during checkout
+purchase,begin_checkout,a purchase completes a checkout that was started
+refund,purchase,only a completed purchase can be refunded

@@ -1,5 +1,5 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops
-from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days, split_low_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops, find_dependency_breaks
+from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days, split_low_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks
 import pandas as pd
 
 
@@ -318,3 +318,32 @@ def test_describes_coverage_drops_as_stretches():
     lines = describe_coverage_drops(drops, "purchase", {"value"})
 
     assert "- value (typical daily coverage 95.0%, 22 missing records on these days): Jan 26, 2021 to Jan 27, 2021: 3 of 20 (15.0%); Jan 30, 2021: 0 of 5 (0.0%)" in lines
+
+def test_flags_event_firing_more_than_the_event_it_requires():
+    daily = pd.DataFrame({
+        "event_name": ["view_item_list", "select_item", "begin_checkout", "purchase"],
+        "event_count": [10, 400, 100, 20],
+    })
+    dependencies = pd.DataFrame({
+        "event_name": ["select_item", "purchase"],
+        "requires": ["view_item_list", "begin_checkout"],
+    })
+
+    breaks = find_dependency_breaks(daily, dependencies)
+
+    assert list(breaks["event_name"]) == ["select_item"]
+
+
+def test_describes_dependency_break_with_ratio():
+    breaks = pd.DataFrame({
+        "event_name": ["select_item"],
+        "requires": ["view_item_list"],
+        "reason": ["an item can only be selected from a list that was shown"],
+        "event_count": [400],
+        "required_count": [10],
+    })
+
+    problem = describe_dependency_breaks(breaks, {})[0]
+
+    assert "select_item fired 40.0 times as often as view_item_list." in problem
+    assert "Used in, according to the tracking plan: select_item: not listed" in problem

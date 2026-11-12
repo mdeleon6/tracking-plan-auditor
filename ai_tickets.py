@@ -3,7 +3,7 @@ import anthropic
 import pandas as pd
 import re
 from bq import load_sql, run_query
-from checks import find_low_days, find_missing_days, run_field_check, run_co_missing_check, run_coverage_drop_check
+from checks import find_low_days, find_missing_days, run_field_check, run_co_missing_check, run_coverage_drop_check, run_dependency_check
 
 
 SYSTEM_PROMPT = """
@@ -196,6 +196,27 @@ def describe_coverage_drops(drops: pd.DataFrame, event_name: str, fields: set[st
     return lines
 
 
+def describe_dependency_breaks(breaks: pd.DataFrame, uses: dict[str, str]) -> list[str]:
+    """Write one problem description per event that fired more often than the event it requires."""
+    problems = []
+    for _, row in breaks.iterrows():
+        event, required = row["event_name"], row["requires"]
+        lines = [
+            "Check: event dependencies. A pair is flagged when an event fires more often over the period than the event it requires.",
+            f"Event: {event}",
+            f"Requires: {required}, because {row['reason']}.",
+            f"{event} fired {row['event_count']} times. {required} fired {row['required_count']} times.",
+        ]
+        if row["required_count"] > 0:
+            times = round(row["event_count"] / row["required_count"], 1)
+            lines.append(f"{event} fired {times} times as often as {required}.")
+        else:
+            lines.append(f"{required} never fired.")
+        lines.append(f"Used in, according to the tracking plan: {event}: {uses.get(event, 'not listed')}; {required}: {uses.get(required, 'not listed')}.")
+        problems.append("\n".join(lines))
+    return problems
+
+
 def find_unsupported_numbers(ticket: str, problem: str) -> set[str]:
     """Return numbers in the ticket that do not appear in the problem text."""
     pattern = r"\d+(?:\.\d+)?"
@@ -372,5 +393,16 @@ def draft_low_day_tickets() -> None:
         print(number, find_unsupported_numbers(ticket, problem))
 
 
+def draft_dependency_tickets() -> None:
+    problems = describe_dependency_breaks(run_dependency_check(), load_event_uses())
+    output_folder = Path(__file__).parent / "ai_drafts"
+    output_folder.mkdir(exist_ok=True)
+
+    for number, problem in enumerate(problems, start=1):
+        ticket = draft_ticket(problem)
+        (output_folder / f"draft_dependency_{number}.md").write_text(ticket, encoding="utf-8")
+        print(number, find_unsupported_numbers(ticket, problem))
+
+
 if __name__ == "__main__":
-    draft_field_gap_tickets()
+    draft_dependency_tickets()

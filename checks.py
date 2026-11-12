@@ -65,6 +65,16 @@ def find_coverage_drops(records: pd.DataFrame, fields: list[str], max_drop: floa
     return pd.concat(drops, ignore_index=True)
 
 
+def find_dependency_breaks(daily: pd.DataFrame, dependencies: pd.DataFrame) -> pd.DataFrame:
+    """Return pairs where an event fired more often than the event it requires."""
+    totals = daily.assign(event_count=daily["event_count"].astype(int)).groupby("event_name")["event_count"].sum()
+    result = dependencies.assign(
+        event_count=dependencies["event_name"].map(totals).fillna(0).astype(int),
+        required_count=dependencies["requires"].map(totals).fillna(0).astype(int),
+    )
+    return result[result["event_count"] > result["required_count"]]
+
+
 def find_missing_days(daily: pd.DataFrame) -> dict[str, set[str]]:
     """Return the dates each event did not appear on."""
     all_dates = set(daily["event_date"].tolist())
@@ -165,6 +175,16 @@ def run_coverage_drop_check() -> pd.DataFrame:
     ]["field_name"].tolist()
     min_records = load_settings()["min_records_per_day"]
     return find_coverage_drops(records, fields, min_records=min_records).assign(event_name="purchase")
+
+
+def run_dependency_check() -> pd.DataFrame:
+    """Find events that fired more often than the event they require."""
+    deps_path = Path(__file__).parent / "tracking_plan" / "event_dependencies.csv"
+    if not deps_path.exists():
+        return pd.DataFrame(columns=["event_name", "requires", "reason", "event_count", "required_count"])
+    sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
+    daily = run_query(load_sql(sql_path))
+    return find_dependency_breaks(daily, pd.read_csv(deps_path))
 
 
 def run_volume_check() -> dict[str, set[str]]:
