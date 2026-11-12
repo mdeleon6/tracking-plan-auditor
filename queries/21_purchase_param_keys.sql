@@ -1,6 +1,7 @@
 -- Q: Which event_params keys does each purchase event carry?
 
 SELECT
+  event_date,
   event_name,
   ARRAY(SELECT key FROM UNNEST(event_params)) AS keys
 FROM `{table}`

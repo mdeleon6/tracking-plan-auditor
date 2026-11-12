@@ -3,7 +3,7 @@ import anthropic
 import pandas as pd
 import re
 from bq import load_sql, run_query
-from checks import find_low_days, find_missing_days, run_field_check, run_co_missing_check
+from checks import find_low_days, find_missing_days, run_field_check, run_co_missing_check, run_coverage_drop_check
 
 
 SYSTEM_PROMPT = """
@@ -139,7 +139,7 @@ def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, sev
     return problems
 
 
-def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co_missing: pd.DataFrame, min_coverage: float = 0.99) -> list[str]:
+def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co_missing: pd.DataFrame, drops: pd.DataFrame, min_coverage: float = 0.99) -> list[str]:
     """Group field gaps into problem descriptions, one per event and coverage rate."""
     problems = []
     for (event_name, rate), rows in gaps.groupby(["event_name", "coverage_rate"]):
@@ -168,8 +168,32 @@ def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co
                 f"Records missing both {pair['field_a']} and {pair['field_b']}: {pair['missing_both']} "
                 f"({pair['field_a']} missing on {pair['missing_a']}, {pair['field_b']} missing on {pair['missing_b']})."
             )
+        lines.extend(describe_coverage_drops(drops, event_name, fields))
         problems.append("\n".join(lines))
     return problems
+
+
+def describe_coverage_drops(drops: pd.DataFrame, event_name: str, fields: set[str], max_drop: float = 0.10) -> list[str]:
+    """Write lines listing the stretches of days when each field's coverage dropped."""
+    rows = drops[(drops["event_name"] == event_name) & drops["field_name"].isin(fields)]
+    if rows.empty:
+        return []
+    by_text = {}
+    for field, days in rows.groupby("field_name"):
+        dates = pd.to_datetime(days["event_date"], format="%Y%m%d")
+        parts = []
+        for start, end in group_consecutive_dates(set(days["event_date"])):
+            stretch = days[(dates >= start) & (dates <= end)]
+            present, total = int(stretch["present"].sum()), int(stretch["total"].sum())
+            parts.append(f"{format_stretch(start, end)}: {present} of {total} ({round(present / total * 100, 1)}%)")
+        typical = round(days["typical"].iloc[0] * 100, 1)
+        missing_on_days = int((days["total"] - days["present"]).sum())
+        text = f"(typical daily coverage {typical}%, {missing_on_days} missing records on these days): " + "; ".join(parts)
+        by_text.setdefault(text, []).append(field)
+    lines = [f"Days when coverage was more than {round(max_drop * 100)} percentage points below the field's typical daily coverage:"]
+    for text, names in by_text.items():
+        lines.append(f"- {', '.join(names)} {text}")
+    return lines
 
 
 def find_unsupported_numbers(ticket: str, problem: str) -> set[str]:
@@ -270,7 +294,7 @@ def describe_low_days_together(
 
 def draft_field_gap_tickets() -> None:
     gaps = run_field_check()
-    problems = describe_field_gaps(gaps, load_field_uses(), run_co_missing_check())
+    problems = describe_field_gaps(gaps, load_field_uses(), run_co_missing_check(), run_coverage_drop_check())
     output_folder = Path(__file__).parent / "ai_drafts"
     output_folder.mkdir(exist_ok=True)
 

@@ -1,6 +1,6 @@
 import pandas as pd
 from pathlib import Path
-from bq import load_sql, run_query
+from bq import load_sql, run_query, load_settings
 from itertools import combinations
 
 
@@ -44,6 +44,25 @@ def find_co_missing(records: pd.DataFrame, fields: list[str]) -> pd.DataFrame:
             "missing_both": int((missing[a] & missing[b]).sum()),
         })
     return pd.DataFrame(rows)
+
+
+def daily_field_coverage(records: pd.DataFrame, field: str) -> pd.DataFrame:
+    """Return each day's count of records with the field, total records, and coverage."""
+    has_field = records["keys"].apply(lambda keys: field in keys)
+    daily = has_field.groupby(records["event_date"]).agg(present="sum", total="count")
+    daily["coverage"] = daily["present"] / daily["total"]
+    return daily.reset_index()
+
+
+def find_coverage_drops(records: pd.DataFrame, fields: list[str], max_drop: float = 0.10, min_records: int = 1) -> pd.DataFrame:
+    """Return days when a field's coverage is more than max_drop below its typical daily coverage."""
+    drops = []
+    for field in fields:
+        daily = daily_field_coverage(records, field)
+        typical = daily["coverage"].median()
+        low = daily[(daily["total"] >= min_records) & (daily["coverage"] < typical - max_drop)]
+        drops.append(low.assign(field_name=field, typical=typical))
+    return pd.concat(drops, ignore_index=True)
 
 
 def find_missing_days(daily: pd.DataFrame) -> dict[str, set[str]]:
@@ -131,6 +150,21 @@ def run_co_missing_check() -> pd.DataFrame:
         & (plan["status"] == "active")
     ]["field_name"].tolist()
     return find_co_missing(records, fields).assign(event_name="purchase")
+
+
+def run_coverage_drop_check() -> pd.DataFrame:
+    """Find days when a required purchase field's coverage dropped well below normal."""
+    sql_path = Path(__file__).parent / "queries" / "21_purchase_param_keys.sql"
+    records = run_query(load_sql(sql_path))
+    plan = pd.read_csv(Path(__file__).parent / "tracking_plan" / "event_fields.csv")
+    fields = plan[
+        (plan["event_name"] == "purchase")
+        & (plan["location"] == "event_params")
+        & (plan["required"] == "yes")
+        & (plan["status"] == "active")
+    ]["field_name"].tolist()
+    min_records = load_settings()["min_records_per_day"]
+    return find_coverage_drops(records, fields, min_records=min_records).assign(event_name="purchase")
 
 
 def run_volume_check() -> dict[str, set[str]]:

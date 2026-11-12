@@ -1,5 +1,5 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing
-from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days, split_low_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops
+from ai_tickets import describe_field_gaps, find_unsupported_numbers, group_consecutive_dates, describe_missing_days, split_low_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops
 import pandas as pd
 
 
@@ -110,8 +110,10 @@ def test_groups_fields_with_same_event_and_rate():
         "missing_b": [27, 3],
         "missing_both": [8, 3],
     })
+    drops = pd.DataFrame(
+        columns=["event_name", "field_name", "event_date", "present", "total", "typical"])
 
-    problems = describe_field_gaps(gaps, {("purchase", "value"): "revenue"}, co_missing)
+    problems = describe_field_gaps(gaps, {("purchase", "value"): "revenue"}, co_missing, drops)
 
     assert len(problems) == 2
     assert any("Gap to threshold: 7.0 percentage points" in p for p in problems)
@@ -280,3 +282,39 @@ def test_counts_records_missing_two_fields_together():
     assert row["missing_a"] == 2
     assert row["missing_b"] == 2
     assert row["missing_both"] == 1
+
+
+def test_daily_field_coverage():
+    records = pd.DataFrame({
+        "event_date": ["20210125", "20210125", "20210126", "20210126"],
+        "keys": [["shipping_tier"], ["shipping_tier"], ["shipping_tier"], []],
+    })
+
+    daily = daily_field_coverage(records, "shipping_tier")
+
+    assert list(daily["coverage"]) == [1.0, 0.5]
+    
+    
+def test_coverage_drops_skip_days_below_minimum():
+    records = pd.DataFrame({
+        "event_date": ["20210101"] * 4 + ["20210102"] * 4 + ["20210103"] * 4 + ["20210104"],
+        "keys": [["x"]] * 12 + [[]],
+    })
+
+    assert len(find_coverage_drops(records, ["x"])) == 1
+    assert len(find_coverage_drops(records, ["x"], min_records=2)) == 0
+
+
+def test_describes_coverage_drops_as_stretches():
+    drops = pd.DataFrame({
+        "event_name": ["purchase"] * 3,
+        "field_name": ["value", "value", "value"],
+        "event_date": ["20210126", "20210127", "20210130"],
+        "present": [2, 1, 0],
+        "total": [10, 10, 5],
+        "typical": [0.95, 0.95, 0.95],
+    })
+
+    lines = describe_coverage_drops(drops, "purchase", {"value"})
+
+    assert "- value (typical daily coverage 95.0%, 22 missing records on these days): Jan 26, 2021 to Jan 27, 2021: 3 of 20 (15.0%); Jan 30, 2021: 0 of 5 (0.0%)" in lines
