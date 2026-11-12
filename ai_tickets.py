@@ -1,9 +1,18 @@
-from pathlib import  Path
-import anthropic
-import pandas as pd
+"""Draft tickets with Claude from the problem descriptions, and check the numbers in each draft."""
+from pathlib import Path
+from typing import Callable
 import re
-from bq import load_sql, run_query
-from checks import find_low_days, find_missing_days, run_field_check, run_co_missing_check, run_coverage_drop_check, run_dependency_check
+import anthropic
+from checks import find_missing_days, find_low_days, split_low_days
+from describe import (
+    describe_field_gaps, describe_missing_days, describe_dependency_breaks,
+    describe_low_days_by_event, describe_low_days_together,
+)
+from plan import load_event_severities, load_event_uses, load_field_uses, load_holidays
+from run_checks import (
+    daily_event_counts, run_field_check, run_co_missing_check,
+    run_coverage_drop_check, run_dependency_check,
+)
 
 
 SYSTEM_PROMPT = """
@@ -32,6 +41,7 @@ In the ticket, call the information you were given "the check results". Never wr
 """
 
 client = anthropic.Anthropic()
+OUTPUT_FOLDER = Path(__file__).parent / "ai_drafts"
 
 
 def draft_ticket(problem: str) -> str:
@@ -58,165 +68,6 @@ def draft_ticket(problem: str) -> str:
     return next(block.text for block in response.content if block.type == "text")
 
 
-def group_consecutive_dates(dates: set[str]) -> list[tuple[pd.Timestamp, pd.Timestamp]]:
-    """Turn a set of YYYYMMDD dates into (first day, last day) stretches."""
-    days = sorted(pd.to_datetime(list(dates), format="%Y%m%d"))
-    stretches = []
-    start = days[0]
-    previous = days[0]
-
-    for day in days[1:]:
-        if (day - previous).days != 1:
-            stretches.append((start, previous))
-            start = day
-        previous = day
-
-    stretches.append((start, previous))
-    return stretches
-
-
-def format_day(day: pd.Timestamp) -> str:
-    """Write a date like Nov 2, 2020."""
-    return f"{day:%b} {day.day}, {day.year}"
-
-
-def format_stretch(start: pd.Timestamp, end: pd.Timestamp) -> str:
-    """Write a stretch of dates, or one date if it starts and ends on the same day."""
-    if start == end:
-        return format_day(start)
-    return f"{format_day(start)} to {format_day(end)}"
-
-
-def format_day_with_holiday(event_date: str, holidays: dict[str, str]) -> str:
-    """Format a YYYYMMDD date, adding the holiday name if the calendar has one."""
-    day = pd.to_datetime(event_date, format="%Y%m%d")
-    holiday = holidays.get(event_date)
-    if holiday:
-        return f"{format_day(day)} ({holiday})"
-    return format_day(day)
-
-
-def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, severities: dict[str, str], uses: dict[str, str]) -> list[str]:
-    """Write one problem description per event that has days with no data."""
-    days = pd.to_datetime(daily["event_date"], format="%Y%m%d")
-    period = format_stretch(days.min(), days.max())
-    total_days = days.nunique()
-
-    complete_events = sorted(set(daily["event_name"]) - set(missing.keys()))
-
-
-    problems = []
-    for event_name, gaps in missing.items():
-        severity = severities.get(event_name, "not rated").capitalize()
-        event_rows = daily[daily["event_name"] == event_name]
-        total_events = event_rows["event_count"].astype(int).sum()
-        days_with_data = total_days - len(gaps)
-        stretches = group_consecutive_dates(gaps)
-        lines = [
-            "Check: missing days. An event is flagged for any day in the data period when it has no rows.",
-            f"Event: {event_name}",
-            f"Severity set by the tracking plan: {severity}.",
-            f"Used in, according to the tracking plan: {uses.get(event_name, 'not listed')}.",
-            f"Data period: {period} ({total_days} days).",
-            f"Total events received on the {days_with_data} days with data: {total_events}.",
-            f"Days with no data for this event: {len(gaps)} of {total_days}.",
-            "At least one other event was received on every one of these days.",
-            f"Events with data on every day of the period: {', '.join(complete_events)}.",
-            "Dates with no data:",
-        ]
-        for start, end in stretches:
-            lines.append(f"- {format_stretch(start, end)}")
-        for other_event, other_gaps in missing.items():
-            shared = gaps & other_gaps
-            if other_event != event_name and shared:
-                shared_stretches = group_consecutive_dates(shared)
-                shared_dates = "; ".join(format_stretch(start, end) for start, end in shared_stretches)
-                lines.append(
-                    f"{other_event} also has no data on {len(shared)} of these days: {shared_dates}. "
-                    f"Across the whole period, {other_event} has no data on {len(other_gaps)} days."
-                )
-        problems.append("\n".join(lines))
-    return problems
-
-
-def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co_missing: pd.DataFrame, drops: pd.DataFrame, min_coverage: float = 0.99) -> list[str]:
-    """Group field gaps into problem descriptions, one per event and coverage rate."""
-    problems = []
-    for (event_name, rate), rows in gaps.groupby(["event_name", "coverage_rate"]):
-        missing = round((1 - rate) * 100, 4)
-        gap = round((min_coverage - rate) * 100, 4)
-        lines = [
-            f"Check: required field coverage. A field is flagged when coverage is below {min_coverage}.",
-            f"Event: {event_name}",
-            f"Share of events or products missing each field: {missing}%. Gap to threshold: {gap} percentage points.",
-            f"Flagged fields, all with coverage_rate {round(rate, 6)}:",
-        ]
-        for _, row in rows.iterrows():
-            unit = row["measured_per"]
-            used = uses.get((event_name, row["field_name"]), "not listed")
-            lines.append(f"- {row['field_name']} (location: {row['location']}, measured per {unit}; used in: {used})")
-        if ((rows["location"] == "items") & (rows["measured_per"] == "event")).any():
-            lines.append("The tracking plan expects these fields on one product per event, the product actually added, so an event counts as covered if at least one of its products has the field.")
-        fields = set(rows["field_name"])
-        linked = co_missing[
-            (co_missing["event_name"] == event_name)
-            & (co_missing["missing_both"] > 0)
-            & (co_missing["field_a"].isin(fields) | co_missing["field_b"].isin(fields))
-        ]
-        for _, pair in linked.iterrows():
-            lines.append(
-                f"Records missing both {pair['field_a']} and {pair['field_b']}: {pair['missing_both']} "
-                f"({pair['field_a']} missing on {pair['missing_a']}, {pair['field_b']} missing on {pair['missing_b']})."
-            )
-        lines.extend(describe_coverage_drops(drops, event_name, fields))
-        problems.append("\n".join(lines))
-    return problems
-
-
-def describe_coverage_drops(drops: pd.DataFrame, event_name: str, fields: set[str], max_drop: float = 0.10) -> list[str]:
-    """Write lines listing the stretches of days when each field's coverage dropped."""
-    rows = drops[(drops["event_name"] == event_name) & drops["field_name"].isin(fields)]
-    if rows.empty:
-        return []
-    by_text = {}
-    for field, days in rows.groupby("field_name"):
-        dates = pd.to_datetime(days["event_date"], format="%Y%m%d")
-        parts = []
-        for start, end in group_consecutive_dates(set(days["event_date"])):
-            stretch = days[(dates >= start) & (dates <= end)]
-            present, total = int(stretch["present"].sum()), int(stretch["total"].sum())
-            parts.append(f"{format_stretch(start, end)}: {present} of {total} ({round(present / total * 100, 1)}%)")
-        typical = round(days["typical"].iloc[0] * 100, 1)
-        missing_on_days = int((days["total"] - days["present"]).sum())
-        text = f"(typical daily coverage {typical}%, {missing_on_days} missing records on these days): " + "; ".join(parts)
-        by_text.setdefault(text, []).append(field)
-    lines = [f"Days when coverage was more than {round(max_drop * 100)} percentage points below the field's typical daily coverage:"]
-    for text, names in by_text.items():
-        lines.append(f"- {', '.join(names)} {text}")
-    return lines
-
-
-def describe_dependency_breaks(breaks: pd.DataFrame, uses: dict[str, str]) -> list[str]:
-    """Write one problem description per event that fired more often than the event it requires."""
-    problems = []
-    for _, row in breaks.iterrows():
-        event, required = row["event_name"], row["requires"]
-        lines = [
-            "Check: event dependencies. A pair is flagged when an event fires more often over the period than the event it requires.",
-            f"Event: {event}",
-            f"Requires: {required}, because {row['reason']}.",
-            f"{event} fired {row['event_count']} times. {required} fired {row['required_count']} times.",
-        ]
-        if row["required_count"] > 0:
-            times = round(row["event_count"] / row["required_count"], 1)
-            lines.append(f"{event} fired {times} times as often as {required}.")
-        else:
-            lines.append(f"{required} never fired.")
-        lines.append(f"Used in, according to the tracking plan: {event}: {uses.get(event, 'not listed')}; {required}: {uses.get(required, 'not listed')}.")
-        problems.append("\n".join(lines))
-    return problems
-
-
 def find_unsupported_numbers(ticket: str, problem: str) -> set[str]:
     """Return numbers in the ticket that do not appear in the problem text."""
     pattern = r"\d+(?:\.\d+)?"
@@ -225,157 +76,31 @@ def find_unsupported_numbers(ticket: str, problem: str) -> set[str]:
     return ticket_numbers - problem_numbers
 
 
-def split_low_days(low: pd.DataFrame, min_events: int = 5) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Separate days when many events dropped together from drops on just a few events."""
-    events_per_day = low.groupby("event_date")["event_name"].transform("nunique")
-    together = low[events_per_day >= min_events]
-    separate = low[events_per_day < min_events]
-    return together, separate
-
-
-def describe_low_days_by_event(
-    separate: pd.DataFrame,
-    together: pd.DataFrame,
-    missing: dict[str, set[str]],
-    severities: dict[str, str],
-    holidays: dict[str, str],
-    uses: dict[str, str],
-    min_ratio: float = 0.5,
-) -> list[str]:
-    """Write one problem description per event with low days."""
-    problems = []
-    for event_name, rows in separate.groupby("event_name"):
-        rating = severities.get(event_name, "not rated").capitalize()
-        lines = [
-            f"Check: low volume. A day is flagged when an event's count is below {min_ratio} of its typical count, meaning the median for that weekday.",
-            f"Event: {event_name}",
-            f"Tracking plan rating if this event stopped arriving entirely: {rating}.",
-            f"Used in, according to the tracking plan: {uses.get(event_name, 'not listed')}.",
-            f"Number of flagged days: {len(rows)}.",
-            "Holiday names next to dates come from the holiday calendar in the tracking plan, followed by where each holiday is observed as a day off. A single date without a name is not on that calendar. Date ranges are not checked against the calendar.",
-            "Flagged days:",
-        ]
-        for _, row in rows.sort_values("event_date").iterrows():
-            percent = round(row["ratio"] * 100, 1)
-            lines.append(f"- {format_day_with_holiday(row['event_date'], holidays)}: {row['event_count']} events, typical {row['typical']:g}, {percent}% of typical")
-        
-        grouped_days = sorted(together[together["event_name"] == event_name]["event_date"])
-        if grouped_days:
-            days = ", ".join(format_day_with_holiday(d, holidays) for d in grouped_days)
-            lines.append(
-                f"This event was also below threshold on {len(grouped_days)} more days when many events dropped together. "
-                f"Those days are covered in a separate multi-event ticket: {days}."
-            )
-
-        if event_name in missing:
-            stretches = group_consecutive_dates(missing[event_name])
-            dates = "; ".join(format_stretch(start, end) for start, end in stretches)
-            lines.append(
-                f"This event also has days with no data at all: {dates}. "
-                "Those days are covered in a separate missing-day ticket and are not part of this one."
-            )
-
-        problems.append("\n".join(lines))
-    return problems
-
-
-def describe_low_days_together(
-    together: pd.DataFrame,
-    severities: dict[str, str],
-    holidays: dict[str, str],
-    uses: dict[str, str],
-    min_events: int = 5,
-    min_ratio: float = 0.5,
-) -> list[str]:
-    """Write one problem description for days when many events dropped together."""
-    if together.empty:
-        return []
-
-    events = sorted(together["event_name"].unique())
-    high_events = [event for event in events if severities.get(event) == "high"]
-    high_uses = "; ".join(f"{event}: {uses[event]}" for event in high_events if event in uses)
-    lines = [
-        f"Check: low volume across many events. A day is listed when at least {min_events} events are each below {min_ratio} of their typical count, meaning the median for that weekday.",
-        "Event: multiple events",
-        f"Days listed: {together['event_date'].nunique()}. Different events affected: {len(events)}.",
-        f"Affected events rated High in the tracking plan if they stopped arriving entirely: {', '.join(high_events) or 'none'}.",
-        f"What the High-rated events are used in, according to the tracking plan: {high_uses or 'none'}.",
-        "Holiday names next to dates come from the holiday calendar in the tracking plan, followed by where each holiday is observed as a day off. A single date without a name is not on that calendar. Date ranges are not checked against the calendar.",
-        "Days listed, with each affected event's count as a percentage of its typical count:",
-    ]
-    for event_date, rows in together.groupby("event_date"):
-        drops = ", ".join(
-            f"{row['event_name']} {round(row['ratio'] * 100, 1)}%"
-            for _, row in rows.sort_values("event_name").iterrows()
-        )
-        lines.append(f"- {format_day_with_holiday(event_date, holidays)}: {len(rows)} events below threshold: {drops}")
-
-    return ["\n".join(lines)]
+def save_drafts(problems: list[str], prefix: str, skip: Callable[[str], bool] = lambda problem: False) -> None:
+    """Draft a ticket for each problem, save it, and print any numbers not in the check results."""
+    OUTPUT_FOLDER.mkdir(exist_ok=True)
+    for number, problem in enumerate(problems, start=1):
+        if skip(problem):
+            continue
+        ticket = draft_ticket(problem)
+        (OUTPUT_FOLDER / f"{prefix}{number}.md").write_text(ticket, encoding="utf-8")
+        print(number, find_unsupported_numbers(ticket, problem))
 
 
 def draft_field_gap_tickets() -> None:
-    gaps = run_field_check()
-    problems = describe_field_gaps(gaps, load_field_uses(), run_co_missing_check(), run_coverage_drop_check())
-    output_folder = Path(__file__).parent / "ai_drafts"
-    output_folder.mkdir(exist_ok=True)
-
-    for number, problem in enumerate(problems, start=1):
-        if "- shipping_tier (" in problem:
-            continue
-        ticket = draft_ticket(problem)
-        (output_folder / f"draft_{number}.md").write_text(ticket, encoding="utf-8")
-        print(number, find_unsupported_numbers(ticket, problem))
-
-
-def load_event_severities() -> dict[str, str]:
-    """Read each event's severity_if_missing rating from the tracking plan."""
-    plan_path = Path(__file__).parent / "tracking_plan" / "events.csv"
-    plan = pd.read_csv(plan_path)
-    rated = plan.dropna(subset=["severity_if_missing"])
-    return dict(zip(rated["event_name"], rated["severity_if_missing"]))
-
-
-def load_event_uses() -> dict[str, str]:
-    """Read what each event is used in from the tracking plan."""
-    plan_path = Path(__file__).parent / "tracking_plan" / "events.csv"
-    plan = pd.read_csv(plan_path)
-    used = plan.dropna(subset=["used_in"])
-    return dict(zip(used["event_name"], used["used_in"]))
-
-
-def load_field_uses() -> dict[tuple[str, str], str]:
-    """Read what each field is used in, keyed by (event, field)."""
-    plan_path = Path(__file__).parent / "tracking_plan" / "event_fields.csv"
-    plan = pd.read_csv(plan_path)
-    return dict(zip(zip(plan["event_name"], plan["field_name"]), plan["used_in"]))
-
-
-def load_holidays() -> dict[str, str]:
-    """Read the holiday calendar, keyed by date in YYYYMMDD format."""
-    calendar_path = Path(__file__).parent / "tracking_plan" / "calendar.csv"
-    calendar = pd.read_csv(calendar_path, dtype={"date": str})
-    return dict(zip(calendar["date"], calendar["name"] + ": " + calendar["observed"]))
+    problems = describe_field_gaps(run_field_check(), load_field_uses(), run_co_missing_check(), run_coverage_drop_check())
+    # The shipping_tier problem is skipped because finding 003 is the example ticket.
+    save_drafts(problems, "draft_", skip=lambda problem: "- shipping_tier (" in problem)
 
 
 def draft_missing_day_tickets() -> None:
-    sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
-    daily = run_query(load_sql(sql_path))
-    missing = find_missing_days(daily)
-    severities = load_event_severities()
-    uses = load_event_uses()
-    problems = describe_missing_days(missing, daily, severities, uses)
-    output_folder = Path(__file__).parent / "ai_drafts"
-    output_folder.mkdir(exist_ok=True)
-
-    for number, problem in enumerate(problems, start=1):
-        ticket = draft_ticket(problem)
-        (output_folder / f"draft_missing_days_{number}.md").write_text(ticket, encoding="utf-8")
-        print(number, find_unsupported_numbers(ticket, problem))
+    daily = daily_event_counts()
+    problems = describe_missing_days(find_missing_days(daily), daily, load_event_severities(), load_event_uses())
+    save_drafts(problems, "draft_missing_days_")
 
 
 def draft_low_day_tickets() -> None:
-    sql_path = Path(__file__).parent / "queries" / "16_daily_event_counts.sql"
-    daily = run_query(load_sql(sql_path))
+    daily = daily_event_counts()
     severities = load_event_severities()
     holidays = load_holidays()
     uses = load_event_uses()
@@ -384,24 +109,12 @@ def draft_low_day_tickets() -> None:
         describe_low_days_together(together, severities, holidays, uses)
         + describe_low_days_by_event(separate, together, find_missing_days(daily), severities, holidays, uses)
     )
-    output_folder = Path(__file__).parent / "ai_drafts"
-    output_folder.mkdir(exist_ok=True)
-
-    for number, problem in enumerate(problems, start=1):
-        ticket = draft_ticket(problem)
-        (output_folder / f"draft_low_days_{number}.md").write_text(ticket, encoding="utf-8")
-        print(number, find_unsupported_numbers(ticket, problem))
+    save_drafts(problems, "draft_low_days_")
 
 
 def draft_dependency_tickets() -> None:
     problems = describe_dependency_breaks(run_dependency_check(), load_event_uses())
-    output_folder = Path(__file__).parent / "ai_drafts"
-    output_folder.mkdir(exist_ok=True)
-
-    for number, problem in enumerate(problems, start=1):
-        ticket = draft_ticket(problem)
-        (output_folder / f"draft_dependency_{number}.md").write_text(ticket, encoding="utf-8")
-        print(number, find_unsupported_numbers(ticket, problem))
+    save_drafts(problems, "draft_dependency_")
 
 
 if __name__ == "__main__":

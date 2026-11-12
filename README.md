@@ -34,6 +34,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Labels flagged days from a holiday calendar in the plan, including where each holiday is observed, since the store sells internationally. Claude treats holidays as context, not a cause
 - Counts purchases missing two required fields together, so linked gaps are backed by evidence (e.g. the same 450 purchases lack transaction_id, value, tax and payment_type, and all of them also lack shipping_tier)
 - Finds days when a required purchase field's coverage fell well below its normal level, grouped into stretches (e.g. transaction_id on 50 of 282 purchases on Jan 26–31). Found Dec 30, 2020, which the manual audit missed
+- Checks event dependencies from the plan (e.g. select_item can't outnumber view_item_list), using GA4 funnel defaults the analyst can edit. Works for web and apps alike
 
 **Planned**
 - Check data types
@@ -49,12 +50,15 @@ Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The
 - `findings/`: audit tickets and supporting results
 - `tracking_plan/`: the plan the data is checked against
 - `bq.py`: runs SQL files in BigQuery from Python
-- `checks.py`: the automated checks
 - `tests/`: pytest unit tests
 - `planted_bugs.py`: tests the checks against bugs planted on purpose
-- `ai_tickets.py`: drafts tickets from detected problems with Claude
 - `ai_drafts/`: sample tickets drafted by Claude from real check results
 - `settings.toml`: which GA4 export and date range to audit, and the project billed for queries
+- `checks.py`: the checks, as pure functions with no BigQuery
+- `run_checks.py`: runs the checks on BigQuery (the part a new data source replaces)
+- `plan.py`: reads the tracking plan files
+- `describe.py`: turns check results into problem descriptions for Claude
+- `ai_tickets.py`: drafts tickets with Claude and flags unsupported numbers
 
 ## Tech
 SQL (BigQuery), GA4, Python (pandas), pytest, Claude API
