@@ -35,6 +35,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Counts purchases missing two required fields together, so linked gaps are backed by evidence (e.g. the same 450 purchases lack transaction_id, value, tax and payment_type, and all of them also lack shipping_tier)
 - Finds days when a required purchase field's coverage fell well below its normal level, grouped into stretches (e.g. transaction_id on 50 of 282 purchases on Jan 26–31). Found Dec 30, 2020, which the manual audit missed
 - Checks event dependencies from the plan (e.g. select_item can't outnumber view_item_list), using GA4 funnel defaults the analyst can edit. Works for web and apps alike
+- Flags events where most records with products carry the same product count above 1 (e.g. 90.7% of add_to_cart records carry exactly 12, and none carry more). Single-product records are ignored, since one item is normal
 
 **Planned**
 - Check data types
