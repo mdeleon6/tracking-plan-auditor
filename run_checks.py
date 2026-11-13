@@ -48,14 +48,14 @@ def run_field_check() -> pd.DataFrame:
 def run_co_missing_check() -> pd.DataFrame:
     """Count purchases missing each pair of required event_params fields."""
     records = query("21_purchase_param_keys.sql")
-    fields = required_fields("purchase", "event_params")
+    fields = required_fields("purchase", "event_params") + required_fields("purchase", "ecommerce")
     return find_co_missing(records, fields).assign(event_name="purchase")
 
 
 def run_coverage_drop_check() -> pd.DataFrame:
     """Find days when a required purchase field's coverage dropped well below normal."""
     records = query("21_purchase_param_keys.sql")
-    fields = required_fields("purchase", "event_params")
+    fields = required_fields("purchase", "event_params") + required_fields("purchase", "ecommerce")
     min_records = load_settings()["min_records_per_day"]
     return find_coverage_drops(records, fields, min_records=min_records).assign(event_name="purchase")
 

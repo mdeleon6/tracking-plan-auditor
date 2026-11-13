@@ -4,7 +4,7 @@
 **Found by:** Martino DeLeon · **Date found:** 2026-11-04 · **Severity:** High
 
 ## Description
-7.9% of purchases are showing in the data with no `transaction_id`. One possible cause is purchases that did not complete, but this has not been confirmed. Most of these are concentrated in Jan 26-31. The same 450 purchases are also missing `value`, `tax` and `payment_type`, so this looks like one gap across several fields rather than four separate ones. The cause is still unconfirmed.
+7.9% of purchases are showing in the data with no `transaction_id`. One possible cause is purchases that did not complete, but this has not been confirmed. Most of these are concentrated in Jan 26-31. The same 450 purchases are also missing `value`, `tax`, `payment_type` and `purchase_revenue`, so this looks like one gap across several fields rather than five separate ones. The cause is still unconfirmed.
 
 ## Evidence (Nov 1, 2020 – Jan 31, 2021)
 - 450 of 5,692 purchases (7.9%) have no `transaction_id` in `event_params`.
@@ -13,7 +13,7 @@
 - Jan 26–31: 232 of 282 missing (82.3%). On Jan 31, 0 of 19 purchases had an ID.
 - Dec 30, 2020: 15 of 37 missing (22 of 37 had an ID). This day is part of the Nov 18–Jan 25 count. It was found by the automated coverage-by-day check, not the manual audit.
 - `ecommerce.transaction_id` is empty through Nov 10, partly filled Nov 11–12, then matches `event_params`.
-- The same 450 purchases are missing `transaction_id`, `value`, `tax` and `payment_type`, and all 450 also lack `shipping_tier` (see finding 003). Confirmed by the automated co-missing check, which counts purchases missing each pair of fields.
+- The same 450 purchases are missing `transaction_id`, `value`, `tax`, `payment_type` and `purchase_revenue`, and all 450 also lack `shipping_tier` (see finding 003). Confirmed by the automated co-missing check, which counts purchases missing each pair of fields.
 - Queries: [`queries/06_purchase_transaction_ids.sql`](../queries/06_purchase_transaction_ids.sql), [`queries/21_purchase_param_keys.sql`](../queries/21_purchase_param_keys.sql)
 
 ## Impact

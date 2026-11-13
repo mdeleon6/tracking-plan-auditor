@@ -14,7 +14,7 @@
 - Dec 30, 2020: 17 of 37 missing (20 of 37 had a tier). This day is part of the Nov 21–Jan 25 count. It was found by the automated coverage-by-day check, not the manual audit. The same day, 15 purchases are missing `transaction_id` (finding 002).
 - Jan 26-31, 2021: 82.3% of 282 purchases missing `shipping_tier` and `transaction_id`.
 - From Nov 21, 2020 on: 430 purchases are missing both fields, 41 are missing only `shipping_tier`, and none are missing only `transaction_id`.
-- Across the whole period, all 450 purchases missing `transaction_id` also lack `shipping_tier`, as well as `value`, `tax` and `payment_type` (see finding 002). No purchase is missing only `transaction_id`. Confirmed by the automated co-missing check.
+- Across the whole period, all 450 purchases missing `transaction_id` also lack `shipping_tier`, as well as `value`, `tax`, `payment_type` and `purchase_revenue` (see finding 002). No purchase is missing only `transaction_id`. Confirmed by the automated co-missing check.
 - Query: [`queries/08_shipping_tier_by_day.sql`](../queries/08_shipping_tier_by_day.sql)
 - Query: [`queries/09_shipping_and_transaction_overlap.sql`](../queries/09_shipping_and_transaction_overlap.sql)
 - Query: [`queries/21_purchase_param_keys.sql`](../queries/21_purchase_param_keys.sql) (automated checks)
