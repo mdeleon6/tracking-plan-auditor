@@ -2,16 +2,20 @@
 from pathlib import Path
 from typing import Callable
 import re
+
 import anthropic
+import pandas as pd
+
+from bq import load_settings
 from checks import find_missing_days, find_low_days, split_low_days
 from describe import (
     describe_field_gaps, describe_missing_days, describe_dependency_breaks,
-    describe_low_days_by_event, describe_low_days_together,
+    describe_low_days_by_event, describe_low_days_together, describe_repeated_item_counts, format_stretch
 )
 from plan import load_event_severities, load_event_uses, load_field_uses, load_holidays
 from run_checks import (
     daily_event_counts, run_field_check, run_co_missing_check,
-    run_coverage_drop_check, run_dependency_check,
+    run_coverage_drop_check, run_dependency_check, run_item_count_check
 )
 
 
@@ -117,5 +121,19 @@ def draft_dependency_tickets() -> None:
     save_drafts(problems, "draft_dependency_")
 
 
+def data_period() -> str:
+    """Write the period set in settings.toml, like Nov 1, 2020 to Jan 31, 2021."""
+    settings = load_settings()
+    start = pd.to_datetime(settings["start_date"], format="%Y%m%d")
+    end = pd.to_datetime(settings["end_date"], format="%Y%m%d")
+    return format_stretch(start, end)
+
+
+def draft_item_count_tickets() -> None:
+    repeated, checked = run_item_count_check()
+    problems = describe_repeated_item_counts(repeated, load_event_uses(), checked, data_period())
+    save_drafts(problems, "draft_item_count_")
+
+
 if __name__ == "__main__":
-    draft_dependency_tickets()
+    draft_item_count_tickets()

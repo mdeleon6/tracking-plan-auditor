@@ -76,6 +76,14 @@ def find_coverage_drops(records: pd.DataFrame, fields: list[str], max_drop: floa
     return pd.concat(drops, ignore_index=True)
 
 
+def find_repeated_item_counts(counts: pd.DataFrame, min_share: float = 0.5) -> pd.DataFrame:
+    """Return events where most records carry the same number of products, above 1."""
+    counts = counts.assign(total=counts.groupby("event_name")["events"].transform("sum"))
+    counts = counts.assign(share=counts["events"] / counts["total"])
+    counts = counts.assign(max_items=counts.groupby("event_name")["items_in_event"].transform("max"))
+    return counts[(counts["items_in_event"] > 1) & (counts["share"] >= min_share)]
+
+
 def find_dependency_breaks(daily: pd.DataFrame, dependencies: pd.DataFrame) -> pd.DataFrame:
     """Return pairs where an event fired more often than the event it requires."""
     totals = daily.assign(event_count=daily["event_count"].astype(int)).groupby("event_name")["event_count"].sum()

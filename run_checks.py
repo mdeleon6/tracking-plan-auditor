@@ -4,7 +4,7 @@ import pandas as pd
 from bq import load_sql, run_query, load_settings
 from checks import (
     audit_events, find_field_gaps, find_co_missing, find_coverage_drops,
-    find_dependency_breaks, find_missing_days, find_low_days,
+    find_dependency_breaks, find_missing_days, find_low_days, find_repeated_item_counts
 )
 from plan import load_events_plan, load_field_plan, required_fields, load_dependencies
 
@@ -66,6 +66,12 @@ def run_dependency_check() -> pd.DataFrame:
     if dependencies is None:
         return pd.DataFrame(columns=["event_name", "requires", "reason", "event_count", "required_count"])
     return find_dependency_breaks(daily_event_counts(), dependencies)
+
+
+def run_item_count_check() -> tuple[pd.DataFrame, set[str]]:
+    """Find events where most records carry the same number of products, and return every event checked."""
+    counts = query("22_items_per_event.sql")
+    return find_repeated_item_counts(counts), set(counts["event_name"])
 
 
 def run_volume_check() -> dict[str, set[str]]:

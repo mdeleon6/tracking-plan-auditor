@@ -1,5 +1,5 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days
-from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts
+from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts
 from ai_tickets import find_unsupported_numbers
 import pandas as pd
 
@@ -348,3 +348,34 @@ def test_describes_dependency_break_with_ratio():
 
     assert "select_item fired 40.0 times as often as view_item_list." in problem
     assert "Used in, according to the tracking plan: select_item: not listed" in problem
+
+
+def test_flags_most_events_sharing_one_item_count_above_one():
+    counts = pd.DataFrame({
+        "event_name": ["add_to_cart", "add_to_cart", "begin_checkout", "begin_checkout"],
+        "items_in_event": [12, 1, 1, 3],
+        "events": [90, 10, 80, 20],
+    })
+
+    repeated = find_repeated_item_counts(counts)
+
+    assert list(repeated["event_name"]) == ["add_to_cart"]
+    assert list(repeated["max_items"]) == [12]
+
+
+def test_describes_repeated_item_counts():
+    repeated = pd.DataFrame({
+        "event_name": ["add_to_cart"],
+        "items_in_event": [12],
+        "events": [90],
+        "total": [100],
+        "share": [0.9],
+        "max_items": [12],
+    })
+
+    problem = describe_repeated_item_counts(repeated, {}, {"add_to_cart", "purchase"}, "Nov 1, 2020 to Jan 31, 2021")[0]
+
+    assert "add_to_cart: 90 of 100 records with products (90.0%) carry exactly 12 products." in problem
+    assert "Checked and not flagged: purchase." in problem
+    assert "Data period: Nov 1, 2020 to Jan 31, 2021." in problem
+

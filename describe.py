@@ -161,6 +161,27 @@ def describe_dependency_breaks(breaks: pd.DataFrame, uses: dict[str, str]) -> li
     return problems
 
 
+def describe_repeated_item_counts(repeated: pd.DataFrame, uses: dict[str, str], checked: set[str], period: str) -> list[str]:
+    """Write one problem description for events where most records carry the same number of products."""
+    if repeated.empty:
+        return []
+    lines = [
+        "Check: repeated product counts. An event is flagged when most of its records with products carry the same number of products, above 1.",
+        f"Data period: {period}.",
+        "The tracking plan does not say how many products each event should carry.",
+    ]
+    for _, row in repeated.iterrows():
+        event = row["event_name"]
+        percent = round(row["share"] * 100, 1)
+        lines.append(
+            f"- {event}: {row['events']} of {row['total']} records with products ({percent}%) carry exactly {row['items_in_event']} products. "
+            f"No record carries more than {row['max_items']}. Used in, according to the tracking plan: {uses.get(event, 'not listed')}."
+        )
+    not_flagged = sorted(checked - set(repeated["event_name"]))
+    lines.append(f"Checked and not flagged: {', '.join(not_flagged)}.")
+    return ["\n".join(lines)]
+
+
 def describe_low_days_by_event(
     separate: pd.DataFrame,
     together: pd.DataFrame,
