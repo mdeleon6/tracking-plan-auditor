@@ -29,7 +29,7 @@ These problems affect the same event but happen on different dates, so they may 
   - Nov 25 - Dec 7, 2020: 89.1% (13,517 of 15,172)
   - Dec 8, 2020: 83.1% (1,475 of 1,775)
   - Dec 9, 2020 - Jan 31, 2021: 51.9% (20,830 of 40,149)
-- The automated field check confirms 36.4% of events have no `quantity`. The Dec 8–9 drop is not automated yet: the coverage-by-day check only covers purchase fields.
+- The automated field check confirms 36.4% of events have no `quantity`. The automated coverage shift check finds both steps: Nov 27–28, 2020 (88.1% and 88.2%, against 99.3% the week before) and Dec 9–12, 2020 (57.0% on Dec 9, against 88.6%). It also found a one-day dip on Jan 24, 2021 (187 of 473, 39.5%), back to 51.5% the next day, which the manual audit missed.
 
 **What is working**
 - `item_id`, `item_name`, `item_category` and `price` are each filled in on 99.98% of products.
