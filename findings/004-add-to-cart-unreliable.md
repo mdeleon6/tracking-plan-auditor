@@ -13,12 +13,14 @@ These problems affect the same event but happen on different dates, so they may 
 - No `add_to_cart` events on 18 of 92 days: Nov 2-15 and Nov 21-24, 2020.
 - 1,071 of 5,692 purchases (18.8%) happened on those 18 days.
 - Volume is also very low next to the gaps: 4 events on Nov 1 and 15 events on Nov 20.
+- The automated missing-days check finds the same 18 days.
 
 **Fixed list of 12 products**
 - 58,543 events carry 667,426 products, an average of 11.4 per event.
 - 53,094 events (90.7%) carry exactly 12 products. 1,849 (3.2%) carry 1. None carry more than 12.
 - Other browsing events show the same pattern: `view_item` 90.8%, `select_item` 80.9%, and `view_item_list` 43 of 43 events with items.
 - Checkout events do not: `begin_checkout` reaches 31 products and `purchase` reaches 30, and very few have exactly 12.
+- The automated repeated product count check reproduces these numbers exactly, and does not flag `begin_checkout` or `purchase`.
 
 **`quantity` marker**
 - 37,260 events (63.6%) have exactly one product with `quantity`. 21,283 (36.4%) have none. No event has more than one.
@@ -27,6 +29,7 @@ These problems affect the same event but happen on different dates, so they may 
   - Nov 25 - Dec 7, 2020: 89.1% (13,517 of 15,172)
   - Dec 8, 2020: 83.1% (1,475 of 1,775)
   - Dec 9, 2020 - Jan 31, 2021: 51.9% (20,830 of 40,149)
+- The automated field check confirms 36.4% of events have no `quantity`. The Dec 8–9 drop is not automated yet: the coverage-by-day check only covers purchase fields.
 
 **What is working**
 - `item_id`, `item_name`, `item_category` and `price` are each filled in on 99.98% of products.
@@ -39,6 +42,9 @@ These problems affect the same event but happen on different dates, so they may 
 - [`queries/13_items_by_event.sql`](../queries/13_items_by_event.sql)
 - [`queries/14_quantity_per_add_to_cart.sql`](../queries/14_quantity_per_add_to_cart.sql)
 - [`queries/15_quantity_by_day.sql`](../queries/15_quantity_by_day.sql)
+- [`queries/16_daily_event_counts.sql`](../queries/16_daily_event_counts.sql) (automated checks)
+- [`queries/19_items_field_coverage_per_event.sql`](../queries/19_items_field_coverage_per_event.sql) (automated checks)
+- [`queries/22_items_per_event.sql`](../queries/22_items_per_event.sql) (automated checks)
 
 ## Impact
 Cart-to-purchase rates will be wrong for November. Purchases were recorded on the 18 missing days but cart activity was not, including the days just before Black Friday.
