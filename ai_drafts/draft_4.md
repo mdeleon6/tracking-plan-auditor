@@ -1,55 +1,59 @@
-# 7.9058% of purchase events are missing transaction_id, value, purchase_revenue, tax and payment_type
+# 450 purchase events are missing `transaction_id`, `value`, `purchase_revenue`, `tax` and `payment_type` from Nov 1 2020 to Jan 31 2021
 
 **Event:** purchase
 **Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-An automated check confirms that each `purchase` event includes the fields needed for order and revenue reporting. It flags a field when fewer than 0.99 of events have it. Five fields were flagged, each with a coverage rate of 0.920942, so 7.9058% of purchase events are missing each one. That is 6.9058 percentage points below the threshold.
+The automated required-field coverage check flagged five fields on the `purchase` event: `transaction_id`, `value`, `purchase_revenue`, `tax` and `payment_type`. Each field has a coverage rate of 0.920942, which means 7.9058% of purchase events are missing it. The check flags a field when coverage is below 0.99, so these fields are 6.9058 percentage points short of the threshold.
 
-Four of the fields (`transaction_id`, `value`, `tax` and `payment_type`) are each missing on 450 records, and these are the same 450 records. All 450 are also missing `shipping_tier`, which is missing on 1533 records in total. `purchase_revenue` has the same coverage rate as the other four fields, but the check results do not say how many records are missing it or whether they are the same 450 records.
+The gaps fall on the same events. Each of the five fields is missing on 450 records, and every pair of these fields is missing together on 450 records. So the same 450 purchase events lack all five fields. All 450 of these events also lack `shipping_tier`, which is missing on 1533 records in total.
 
-Coverage for `transaction_id`, `value`, `tax` and `payment_type` dropped sharply on Dec 30, 2020, Jan 17, 2021 and Jan 26–31, 2021. Jan 26–31 had the lowest coverage. The cause has not been confirmed. Several fields going missing on the same records and days does not by itself prove that they share a cause.
+Most of the gap is on a few days. On Dec 30, 2020, Jan 17, 2021 and Jan 26–31, 2021, coverage was more than 10 percentage points below the typical daily coverage of 96.3%. Jan 26–31, 2021 had the lowest coverage, at 17.7%.
 
-## Evidence
-The overall period covered by the check and the total number of purchase events are not in the check results.
+The cause is not known. The check results do not show why these fields are absent.
 
-- Coverage for each flagged field: 0.920942. Threshold: 0.99. Gap: 6.9058 percentage points.
-- Share of events missing each flagged field: 7.9058%.
-- Flagged fields and where they are stored:
-  - `transaction_id`: event_params, measured per event.
-  - `value`: event_params, measured per event.
-  - `purchase_revenue`: ecommerce, measured per event.
-  - `tax`: event_params, measured per event.
-  - `payment_type`: event_params, measured per event.
-- `transaction_id`, `value`, `tax` and `payment_type` are each missing on 450 records. Every pair of these fields is missing together on 450 records.
-- 450 records are missing `shipping_tier` together with each of those four fields. `shipping_tier` is missing on 1533 records in total.
-- Missing counts and overlaps for `purchase_revenue` are not in the check results.
-- Days with coverage more than 10 percentage points below typical, for `payment_type`, `tax`, `transaction_id` and `value` (typical daily coverage 96.3%):
-  - Dec 30, 2020: 22 of 37 (59.5%).
-  - Jan 17, 2021: 12 of 14 (85.7%).
-  - Jan 26–31, 2021: 50 of 282 (17.7%).
-- These flagged days account for 249 missing records. The check results do not give dates for the remaining missing records.
+## Evidence (Nov 1, 2020 – Jan 31, 2021)
+- **Overall coverage:** `transaction_id`, `value`, `tax` and `payment_type` (in event_params) and `purchase_revenue` (in ecommerce) each have a coverage rate of 0.920942. That means 7.9058% of events are missing each field, 6.9058 percentage points below the 0.99 threshold. Coverage is measured per event.
+- **Records missing each field:**
+  - `transaction_id`: 450
+  - `value`: 450
+  - `purchase_revenue`: 450
+  - `tax`: 450
+  - `payment_type`: 450
+  - `shipping_tier`: 1533
+- **Overlap between fields:** Every pair of the five flagged fields is missing together on 450 records. Each of the five fields is also missing together with `shipping_tier` on 450 records.
+- **Days with coverage more than 10 percentage points below the typical daily coverage of 96.3%** (applies to all five flagged fields):
+  - Dec 30, 2020: 22 of 37 (59.5%)
+  - Jan 17, 2021: 12 of 14 (85.7%)
+  - Jan 26–31, 2021: 50 of 282 (17.7%)
+  - Together, these days account for 249 missing records.
+- **Information the check results do not include:**
+  - The total number of purchase events in the period.
+  - The number of missing records on each listed day.
+  - How the missing records are spread across the other days.
 
 ## Impact
-This is High severity because the missing fields feed key business numbers:
-- **Revenue and average order value** come from `value` and `purchase_revenue`. Revenue reporting cannot be trusted while these fields are missing on 7.9058% of purchase events.
-- **Order counts, removing duplicate purchases and matching orders to the order system** depend on `transaction_id`. Without it, these 450 records cannot be matched to orders. They also cannot be confirmed as unique purchases or as duplicates.
-- **Revenue before and after tax** depends on `tax`.
-- **Orders and revenue by payment type** depend on `payment_type`.
+These five fields feed key business numbers, according to the check results:
+- **`transaction_id`:** order counts, removing duplicate purchases, and matching orders to the order system.
+- **`value` and `purchase_revenue`:** revenue and average order value.
+- **`tax`:** revenue before and after tax.
+- **`payment_type`:** orders and revenue by payment type.
 
-Reports covering Jan 26–31, 2021 are the most affected, because coverage on those days was 17.7%. Days that were not flagged should not be assumed complete. The check results only show what was received.
+For the 450 affected events, revenue cannot be counted from `value` or `purchase_revenue`. These events also cannot be deduplicated or matched to the order system, because they have no `transaction_id`. Revenue, order counts and average order value for the period therefore cannot be trusted. This is why the severity is High.
+
+The problem is worst on Jan 26–31, 2021, where coverage was 17.7%. Any reporting on that period is most affected.
+
+Having rows on other days does not show that the data on those days is complete. Totals for those days should not be treated as correct based on this check alone.
+
+The check results do not confirm whether the 450 events are real purchases that lost their fields or events that should not count as purchases. Both are possible and unconfirmed. The answer decides whether revenue and orders are undercounted or whether these events should be excluded.
 
 ## Suggested next steps
-- Confirm the full date range of the check and the total number of purchase events in it.
-- Get the missing count for `purchase_revenue` and check whether those records are the same 450 records missing the other four fields.
-- Find out whether the 450 records correspond to real orders in the order system. Without `transaction_id`, they cannot be matched by that field.
-- Investigate Dec 30, 2020, Jan 17, 2021 and Jan 26–31, 2021 to find out what changed on those days. Record the cause once it is confirmed.
-- Find the dates of the missing records that fall outside the flagged days.
-- Find out why `shipping_tier` is missing on 1533 records, more than the 450 missing the other fields. It was not one of the flagged fields in this check.
-- Decide how revenue, order and payment-type reports should handle the affected records until the gap is fixed, and tell report users.
+- **Size the problem:** Get the total number of purchase events in the period and the number of missing records on each day. These numbers are not in the check results.
+- **Check against the order system:** For Dec 30, 2020, Jan 17, 2021 and Jan 26–31, 2021, compare against the order system. This shows whether orders exist that correspond to the purchase events missing these fields.
+- **Look for a pattern:** Review the other fields on the 450 affected events to see whether they share anything that would explain why all five fields are absent together.
+- **Find out how the fields are sent:** Confirm with the people who own the purchase tracking how and when these fields are sent. Check whether any tracking changes were made around the listed dates.
 
 ## Acceptance criteria
-- `transaction_id`, `value`, `purchase_revenue`, `tax` and `payment_type` each have coverage of at least 0.99 on `purchase` events.
-- No day has coverage more than 10 percentage points below a field's typical daily coverage for these fields.
-- The missing count and overlap for `purchase_revenue` are reported alongside the other fields.
-- Reports using revenue, order counts, tax or payment type for Dec 30, 2020, Jan 17, 2021 and Jan 26–31, 2021 are corrected or clearly marked as affected.
+- `transaction_id`, `value`, `purchase_revenue`, `tax` and `payment_type` each have coverage of at least 0.99 on `purchase` events for Nov 1, 2020 to Jan 31, 2021. The check should be re-run to confirm this.
+- No day in the period has coverage for these fields more than 10 percentage points below their typical daily coverage.
+- If the 450 events cannot be fixed, there is a documented decision on how revenue, order and average order value reporting handles them. This should cover Jan 26–31, 2021 in particular.

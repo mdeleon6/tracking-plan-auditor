@@ -15,7 +15,7 @@ from describe import (
 from plan import load_event_severities, load_event_uses, load_field_uses, load_holidays
 from run_checks import (
     daily_event_counts, run_field_check, run_co_missing_check,
-    run_coverage_drop_check, run_dependency_check, run_item_count_check
+    run_coverage_drop_check, run_dependency_check, run_item_count_check, run_coverage_shift_check
 )
 
 
@@ -92,7 +92,7 @@ def save_drafts(problems: list[str], prefix: str, skip: Callable[[str], bool] = 
 
 
 def draft_field_gap_tickets() -> None:
-    problems = describe_field_gaps(run_field_check(), load_field_uses(), run_co_missing_check(), run_coverage_drop_check())
+    problems = describe_field_gaps(run_field_check(), load_field_uses(), run_co_missing_check(), run_coverage_drop_check(), run_coverage_shift_check(), data_period())
     # The shipping_tier problem is skipped because finding 003 is the example ticket.
     save_drafts(problems, "draft_", skip=lambda problem: "- shipping_tier (" in problem)
 
@@ -136,4 +136,4 @@ def draft_item_count_tickets() -> None:
 
 
 if __name__ == "__main__":
-    draft_item_count_tickets()
+    draft_field_gap_tickets()

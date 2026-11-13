@@ -83,7 +83,7 @@ def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, sev
     return problems
 
 
-def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co_missing: pd.DataFrame, drops: pd.DataFrame, min_coverage: float = 0.99) -> list[str]:
+def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co_missing: pd.DataFrame, drops: pd.DataFrame, shifts: pd.DataFrame | None = None, period: str | None = None, min_coverage: float = 0.99) -> list[str]:
     """Group field gaps into problem descriptions, one per event and coverage rate."""
     problems = []
     for (event_name, rate), rows in gaps.groupby(["event_name", "coverage_rate"]):
@@ -95,6 +95,8 @@ def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co
             f"Share of events or products missing each field: {missing}%. Gap to threshold: {gap} percentage points.",
             f"Flagged fields, all with coverage_rate {round(rate, 6)}:",
         ]
+        if period is not None:
+            lines.insert(1, f"Data period: {period}.")
         for _, row in rows.iterrows():
             unit = row["measured_per"]
             used = uses.get((event_name, row["field_name"]), "not listed")
@@ -113,6 +115,8 @@ def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co
                 f"({pair['field_a']} missing on {pair['missing_a']}, {pair['field_b']} missing on {pair['missing_b']})."
             )
         lines.extend(describe_coverage_drops(drops, event_name, fields))
+        if shifts is not None:
+            lines.extend(describe_coverage_shifts(shifts, event_name, fields))
         problems.append("\n".join(lines))
     return problems
 
@@ -137,6 +141,29 @@ def describe_coverage_drops(drops: pd.DataFrame, event_name: str, fields: set[st
     lines = [f"Days when coverage was more than {round(max_drop * 100)} percentage points below the field's typical daily coverage:"]
     for text, names in by_text.items():
         lines.append(f"- {', '.join(names)} {text}")
+    return lines
+
+
+def describe_coverage_shifts(shifts: pd.DataFrame, event_name: str, fields: set[str], window: int = 7, max_drop: float = 0.10) -> list[str]:
+    """Write lines listing days when coverage fell well below the previous days' median."""
+    rows = shifts[(shifts["event_name"] == event_name) & shifts["field_name"].isin(fields)]
+    if rows.empty:
+        return []
+    lines = [
+        f"Days when coverage was more than {round(max_drop * 100)} percentage points below the median of the previous {window} days with data. "
+        "A flagged day can mark where a lasting change starts: once the lower level becomes normal, later days are not flagged.",
+    ]
+    for _, row in rows.iterrows():
+        day = format_day(pd.to_datetime(row["event_date"], format="%Y%m%d"))
+        coverage = round(row["coverage"] * 100, 1)
+        before = round(row["before"] * 100, 1)
+        if pd.isna(row["after"]):
+            after = "none in the data"
+        elif row["after"] >= row["before"] - max_drop:
+            after = f"{round(row['after'] * 100, 1)}%, back within {round(max_drop * 100)} points of the previous median"
+        else:
+            after = f"{round(row['after'] * 100, 1)}%, still more than {round(max_drop * 100)} points below the previous median"
+        lines.append(f"- {row['field_name']} on {day}: {row['present']} of {row['total']} ({coverage}%), previous {window} days' median {before}%, next day with data {after}")
     return lines
 
 

@@ -4,7 +4,8 @@ import pandas as pd
 from bq import load_sql, run_query, load_settings
 from checks import (
     audit_events, find_field_gaps, find_co_missing, find_coverage_drops,
-    find_dependency_breaks, find_missing_days, find_low_days, find_repeated_item_counts
+    find_dependency_breaks, find_missing_days, find_low_days, find_repeated_item_counts,
+    find_coverage_shifts
 )
 from plan import load_events_plan, load_field_plan, required_fields, load_dependencies
 
@@ -58,6 +59,13 @@ def run_coverage_drop_check() -> pd.DataFrame:
     fields = required_fields("purchase", "event_params") + required_fields("purchase", "ecommerce")
     min_records = load_settings()["min_records_per_day"]
     return find_coverage_drops(records, fields, min_records=min_records).assign(event_name="purchase")
+
+
+def run_coverage_shift_check() -> pd.DataFrame:
+    """Find days when add_to_cart quantity coverage fell well below the week before."""
+    records = query("23_items_quantity_keys.sql")
+    min_records = load_settings()["min_records_per_day"]
+    return find_coverage_shifts(records, ["quantity"], min_records=min_records).assign(event_name="add_to_cart")
 
 
 def run_dependency_check() -> pd.DataFrame:

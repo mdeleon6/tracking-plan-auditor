@@ -1,5 +1,5 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts
-from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts, find_coverage_shifts
+from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts, describe_coverage_shifts
 from ai_tickets import find_unsupported_numbers
 import pandas as pd
 
@@ -379,3 +379,32 @@ def test_describes_repeated_item_counts():
     assert "Checked and not flagged: purchase." in problem
     assert "Data period: Nov 1, 2020 to Jan 31, 2021." in problem
 
+
+def test_coverage_shifts_flag_the_start_of_a_lasting_drop():
+    records = pd.DataFrame({
+        "event_date": ["20201201", "20201201", "20201202", "20201202", "20201203", "20201203",
+                       "20201204", "20201204", "20201205", "20201205"],
+        "keys": [["quantity"], ["quantity"], ["quantity"], ["quantity"], ["quantity"], [],
+                 ["quantity"], [], ["quantity"], []],
+    })
+
+    shifts = find_coverage_shifts(records, ["quantity"], window=2)
+
+    assert list(shifts["event_date"]) == ["20201203", "20201204"]
+
+
+def test_describes_coverage_shifts():
+    shifts = pd.DataFrame({
+        "event_name": ["add_to_cart"],
+        "field_name": ["quantity"],
+        "event_date": ["20201209"],
+        "present": [57],
+        "total": [100],
+        "coverage": [0.57],
+        "before": [0.886],
+        "after": [0.58],
+    })
+
+    lines = describe_coverage_shifts(shifts, "add_to_cart", {"quantity"})
+
+    assert "- quantity on Dec 9, 2020: 57 of 100 (57.0%), previous 7 days' median 88.6%, next day with data 58.0%, still more than 10 points below the previous median" in lines

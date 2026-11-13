@@ -76,6 +76,18 @@ def find_coverage_drops(records: pd.DataFrame, fields: list[str], max_drop: floa
     return pd.concat(drops, ignore_index=True)
 
 
+def find_coverage_shifts(records: pd.DataFrame, fields: list[str], window: int = 7, max_drop: float = 0.10, min_records: int = 1) -> pd.DataFrame:
+    """Return days when a field's coverage is more than max_drop below its median over the previous window days."""
+    shifts = []
+    for field in fields:
+        daily = daily_field_coverage(records, field)
+        daily["before"] = daily["coverage"].shift(1).rolling(window, min_periods=window).median()
+        daily["after"] = daily["coverage"].shift(-1)
+        low = daily[(daily["total"] >= min_records) & (daily["coverage"] < daily["before"] - max_drop)]
+        shifts.append(low.assign(field_name=field))
+    return pd.concat(shifts, ignore_index=True)
+
+
 def find_repeated_item_counts(counts: pd.DataFrame, min_share: float = 0.5) -> pd.DataFrame:
     """Return events where most records carry the same number of products, above 1."""
     counts = counts.assign(total=counts.groupby("event_name")["events"].transform("sum"))
