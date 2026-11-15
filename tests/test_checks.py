@@ -1,5 +1,5 @@
 from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts, find_coverage_shifts
-from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts, describe_coverage_shifts
+from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts, describe_coverage_shifts, describe_event_audit
 from ai_tickets import find_unsupported_numbers
 import pandas as pd
 
@@ -408,3 +408,17 @@ def test_describes_coverage_shifts():
     lines = describe_coverage_shifts(shifts, "add_to_cart", {"quantity"})
 
     assert "- quantity on Dec 9, 2020: 57 of 100 (57.0%), previous 7 days' median 88.6%, next day with data 58.0%, still more than 10 points below the previous median" in lines
+
+
+def test_describes_event_audit():
+    results = {
+        "missing_in_data": {"refund"},
+        "not_in_plan": {"promo_click"},
+        "deprecated_still_firing": set(),
+    }
+
+    problems = describe_event_audit(results, {"refund": "high"}, {"refund": "net revenue"}, "Nov 1, 2020 to Jan 31, 2021")
+
+    assert len(problems) == 2
+    assert "Severity set by the tracking plan: High." in problems[0]
+    assert "Events not in the plan: promo_click." in problems[1]

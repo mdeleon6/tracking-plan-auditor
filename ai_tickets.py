@@ -9,12 +9,12 @@ import pandas as pd
 from bq import load_settings
 from checks import find_missing_days, find_low_days, split_low_days
 from describe import (
-    describe_field_gaps, describe_missing_days, describe_dependency_breaks,
+    describe_field_gaps, describe_missing_days, describe_dependency_breaks, describe_event_audit,
     describe_low_days_by_event, describe_low_days_together, describe_repeated_item_counts, format_stretch
 )
 from plan import load_event_severities, load_event_uses, load_field_uses, load_holidays
 from run_checks import (
-    daily_event_counts, run_field_check, run_co_missing_check,
+    daily_event_counts, run_field_check, run_co_missing_check, run_event_check,
     run_coverage_drop_check, run_dependency_check, run_item_count_check, run_coverage_shift_check
 )
 
@@ -38,6 +38,7 @@ Choose severity by what the problem breaks, and give your reason in the Impact s
 - High: key business numbers cannot be trusted, such as revenue, orders, units sold or conversion rates.
 - Medium: a secondary total or one type of breakdown is affected, but no key business number depends on the missing data. A breakdown of a key number, such as conversion by product, is Medium when the overall number is not affected.
 - Low: too small to change any decision, such as a few events on a single day, or reporting nobody acts on.
+If the check results say "Severity set by the tracking plan", use that severity exactly. If you think it should be different, keep the plan's severity and add a next step asking the plan owner to review the rating.
 
 You will be given an example ticket inside <example_ticket> tags. Copy its sections, order and tone only. Never reuse its events, dates, numbers or references to past experience. Leave "Found by" and "Date found" blank for a person to fill in. Do not carry over any possible cause, impact, next step or acceptance criterion from the example. Do not reuse the example's wording or the questions it asks.
 
@@ -135,5 +136,10 @@ def draft_item_count_tickets() -> None:
     save_drafts(problems, "draft_item_count_")
 
 
+def draft_event_tickets() -> None:
+    problems = describe_event_audit(run_event_check(), load_event_severities(), load_event_uses(), data_period())
+    save_drafts(problems, "draft_events_")
+
+
 if __name__ == "__main__":
-    draft_field_gap_tickets()
+    draft_event_tickets()

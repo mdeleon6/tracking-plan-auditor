@@ -209,6 +209,33 @@ def describe_repeated_item_counts(repeated: pd.DataFrame, uses: dict[str, str], 
     return ["\n".join(lines)]
 
 
+def describe_event_audit(results: dict[str, set[str]], severities: dict[str, str], uses: dict[str, str], period: str) -> list[str]:
+    """Write one problem per planned event that never arrived, plus one each for unplanned and deprecated events."""
+    problems = []
+    for event in sorted(results["missing_in_data"]):
+        problems.append("\n".join([
+            "Check: planned events. An event is flagged when the tracking plan lists it as active but it never appears in the data.",
+            f"Data period: {period}.",
+            f"Event: {event}",
+            f"Rows received for {event} in the whole period: 0.",
+            f"Severity set by the tracking plan: {severities.get(event, 'not rated').capitalize()}.",
+            f"Used in, according to the tracking plan: {uses.get(event, 'not listed')}.",
+        ]))
+    if results["not_in_plan"]:
+        problems.append("\n".join([
+            "Check: unplanned events. An event is flagged when it appears in the data but is not in the tracking plan.",
+            f"Data period: {period}.",
+            f"Events not in the plan: {', '.join(sorted(results['not_in_plan']))}.",
+        ]))
+    if results["deprecated_still_firing"]:
+        problems.append("\n".join([
+            "Check: deprecated events. An event is flagged when the tracking plan marks it as deprecated but it still appears in the data.",
+            f"Data period: {period}.",
+            f"Deprecated events still received: {', '.join(sorted(results['deprecated_still_firing']))}.",
+        ]))
+    return problems
+
+
 def describe_low_days_by_event(
     separate: pd.DataFrame,
     together: pd.DataFrame,

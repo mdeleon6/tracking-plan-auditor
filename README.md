@@ -23,7 +23,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 
 ## How it works
 **Working now**
-- Compares the tracking plan with the data: planned events that never arrive, events missing from the plan, and deprecated events still being sent
+- Compares the tracking plan with the data: planned events that never arrive, events missing from the plan, and deprecated events still being sent. Each becomes a ticket, using the plan's severity rating (e.g. `refund` never arrived: High, because net revenue depends on it)
 - Checks that required `event_params`, `items` and `ecommerce` fields, plus country, device and platform, are present on at least 99% of their events or products. The plan sets how each field is measured, so a field expected on one product per event (e.g. add_to_cart `quantity`) is checked per event
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday. Typical counts ignore days with no data, and some false alarms are expected around holidays
