@@ -1,7 +1,8 @@
 """Run the checks against BigQuery. This is the only part that reads the data, so a new data source replaces this file."""
 from pathlib import Path
 import pandas as pd
-from bq import load_sql, run_query, load_settings
+from bq import fill_settings, load_sql, run_query, load_settings
+from build_sql import items_coverage_per_product_sql, items_coverage_per_event_sql
 from checks import (
     audit_events, find_field_gaps, find_co_missing, find_coverage_drops,
     find_dependency_breaks, find_missing_days, find_low_days, find_repeated_item_counts,
@@ -28,16 +29,29 @@ def run_event_check() -> dict[str, set[str]]:
     return audit_events(load_events_plan(), observed_events)
 
 
+def items_coverage(plan: pd.DataFrame, measured_per: str) -> pd.DataFrame:
+    """Measure the plan's required items fields, either per product or per event."""
+    rows = plan[
+        (plan["location"] == "items") & (plan["required"] == "yes")
+        & (plan["status"] == "active") & (plan["measured_per"] == measured_per)
+    ]
+    fields = sorted(set(zip(rows["field_name"], rows["type"])))
+    if not fields:
+        return pd.DataFrame(columns=["event_name", "field_name", "coverage_rate", "measured_per"])
+    build = items_coverage_per_product_sql if measured_per == "product" else items_coverage_per_event_sql
+    return run_query(fill_settings(build(fields))).assign(measured_per=measured_per)
+
+
 def run_field_check() -> pd.DataFrame:
     """Compare the field plan with field coverage in BigQuery."""
+    plan = load_field_plan()
     coverage = pd.concat([
         query("event_params_coverage.sql").assign(measured_per="event"),
-        query("items_coverage_per_product.sql").assign(measured_per="product"),
+        items_coverage(plan, "product"),
         query("ecommerce_coverage.sql").assign(measured_per="event"),
-        query("items_coverage_per_event.sql").assign(measured_per="event"),
+        items_coverage(plan, "event"),
         query("country_device_platform_coverage.sql").assign(measured_per="event"),
     ])
-    plan = load_field_plan()
     required = plan[
         (plan["required"] == "yes")
         & (plan["location"].isin(["event_params", "items", "ecommerce", "geo", "device", "top_level"]))

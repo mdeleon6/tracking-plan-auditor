@@ -11,14 +11,19 @@ def load_settings() -> dict[str, str]:
     with open(SETTINGS_PATH, "rb") as f:
         return tomllib.load(f)
 
-def load_sql(path: str | Path) -> str:
-    """Load SQL from a file and fill in the table and date range from the settings."""
+
+def fill_settings(sql: str) -> str:
+    """Fill in the table and date range from the settings."""
     settings = load_settings()
-    with open(path, "r") as f:
-        sql = f.read()
     for key in ("table", "start_date", "end_date"):
         sql = sql.replace("{" + key + "}", settings[key])
     return sql
+
+
+def load_sql(path: str | Path) -> str:
+    """Load SQL from a file and fill in the table and date range from the settings."""
+    with open(path, "r") as f:
+        return fill_settings(f.read())
 
 
 def run_query(sql: str) -> pd.DataFrame:

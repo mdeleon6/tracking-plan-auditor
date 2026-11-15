@@ -43,7 +43,7 @@ These problems affect the same event but happen on different dates, so they may 
 - [`queries/manual/14_quantity_per_add_to_cart.sql`](../queries/manual/14_quantity_per_add_to_cart.sql)
 - [`queries/manual/15_quantity_by_day.sql`](../queries/manual/15_quantity_by_day.sql)
 - [`queries/checks/daily_event_counts.sql`](../queries/checks/daily_event_counts.sql) (automated checks)
-- [`queries/checks/items_coverage_per_event.sql`](../queries/checks/items_coverage_per_event.sql) (automated checks)
+- [`build_sql.py`](../build_sql.py) (automated checks: writes the per-event items coverage SQL from the tracking plan)
 - [`queries/checks/items_per_event.sql`](../queries/checks/items_per_event.sql) (automated checks)
 
 ## Impact

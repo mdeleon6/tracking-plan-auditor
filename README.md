@@ -45,7 +45,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Flags events where most records with products carry the same product count above 1 (e.g. 90.7% of add_to_cart records carry exactly 12, and none carry more). Single-product records are ignored, since one item is normal
 
 **Planned**
-- Build the field lists in the queries from the tracking plan, and run the daily and co-missing checks on every event, not only purchase and add_to_cart
+- Run the daily and co-missing checks on every event from the plan, not only purchase and add_to_cart (items fields are already built from the plan)
 - Warn when a required field never appears in the data, instead of reporting 0% coverage
 - Move the check thresholds (e.g. 10 points, 7 days) into `settings.toml`
 - A step-by-step guide for running the audit on your own GA4 export and tracking plan
@@ -68,6 +68,7 @@ Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The
 - `ai_drafts/`: sample tickets drafted by Claude from real check results
 - `settings.toml`: which GA4 export and date range to audit, and the project billed for queries
 - `checks.py`: the checks, as pure functions with no BigQuery
+- `build_sql.py`: writes SQL from the tracking plan (items fields today), so new plan fields are checked without editing queries
 - `run_checks.py`: runs the checks on BigQuery (the part a new data source replaces)
 - `plan.py`: reads the tracking plan files
 - `describe.py`: turns check results into problem descriptions for Claude
