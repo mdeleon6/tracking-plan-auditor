@@ -30,7 +30,7 @@ def run_query(sql: str) -> pd.DataFrame:
 
 
 if __name__ == "__main__":
-    sql_path = Path(__file__).parent / "queries"/ "01_event_counts.sql"
+    sql_path = Path(__file__).parent / "queries" / "checks" / "event_counts.sql"
     sql = load_sql(sql_path)
 
     df = run_query(sql)

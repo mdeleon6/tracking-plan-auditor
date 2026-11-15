@@ -9,33 +9,33 @@ from checks import (
 )
 from plan import load_events_plan, load_field_plan, required_fields, load_dependencies
 
-QUERIES = Path(__file__).parent / "queries"
+QUERIES = Path(__file__).parent / "queries" / "checks"
 
 
 def query(name: str) -> pd.DataFrame:
-    """Run one of the SQL files in queries/."""
+    """Run one of the SQL files in queries/checks/."""
     return run_query(load_sql(QUERIES / name))
 
 
 def daily_event_counts() -> pd.DataFrame:
     """Return how many times each event fired on each day."""
-    return query("16_daily_event_counts.sql")
+    return query("daily_event_counts.sql")
 
 
 def run_event_check() -> dict[str, set[str]]:
     """Compare the tracking plan's active events with the events in BigQuery."""
-    observed_events = set(query("01_event_counts.sql")["event_name"].tolist())
+    observed_events = set(query("event_counts.sql")["event_name"].tolist())
     return audit_events(load_events_plan(), observed_events)
 
 
 def run_field_check() -> pd.DataFrame:
     """Compare the field plan with field coverage in BigQuery."""
     coverage = pd.concat([
-        query("07_field_coverage.sql").assign(measured_per="event"),
-        query("17_items_field_coverage.sql").assign(measured_per="product"),
-        query("18_ecommerce_field_coverage.sql").assign(measured_per="event"),
-        query("19_items_field_coverage_per_event.sql").assign(measured_per="event"),
-        query("20_country_platform_coverage.sql").assign(measured_per="event"),
+        query("event_params_coverage.sql").assign(measured_per="event"),
+        query("items_coverage_per_product.sql").assign(measured_per="product"),
+        query("ecommerce_coverage.sql").assign(measured_per="event"),
+        query("items_coverage_per_event.sql").assign(measured_per="event"),
+        query("country_device_platform_coverage.sql").assign(measured_per="event"),
     ])
     plan = load_field_plan()
     required = plan[
@@ -48,14 +48,14 @@ def run_field_check() -> pd.DataFrame:
 
 def run_co_missing_check() -> pd.DataFrame:
     """Count purchases missing each pair of required event_params fields."""
-    records = query("21_purchase_param_keys.sql")
+    records = query("purchase_field_keys.sql")
     fields = required_fields("purchase", "event_params") + required_fields("purchase", "ecommerce")
     return find_co_missing(records, fields).assign(event_name="purchase")
 
 
 def run_coverage_drop_check() -> pd.DataFrame:
     """Find days when a required purchase field's coverage dropped well below normal."""
-    records = query("21_purchase_param_keys.sql")
+    records = query("purchase_field_keys.sql")
     fields = required_fields("purchase", "event_params") + required_fields("purchase", "ecommerce")
     min_records = load_settings()["min_records_per_day"]
     return find_coverage_drops(records, fields, min_records=min_records).assign(event_name="purchase")
@@ -63,7 +63,7 @@ def run_coverage_drop_check() -> pd.DataFrame:
 
 def run_coverage_shift_check() -> pd.DataFrame:
     """Find days when add_to_cart quantity coverage fell well below the week before."""
-    records = query("23_items_quantity_keys.sql")
+    records = query("items_quantity_keys.sql")
     min_records = load_settings()["min_records_per_day"]
     return find_coverage_shifts(records, ["quantity"], min_records=min_records).assign(event_name="add_to_cart")
 
@@ -78,7 +78,7 @@ def run_dependency_check() -> pd.DataFrame:
 
 def run_item_count_check() -> tuple[pd.DataFrame, set[str]]:
     """Find events where most records carry the same number of products, and return every event checked."""
-    counts = query("22_items_per_event.sql")
+    counts = query("items_per_event.sql")
     return find_repeated_item_counts(counts), set(counts["event_name"])
 
 
