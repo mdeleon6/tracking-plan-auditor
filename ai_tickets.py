@@ -89,7 +89,7 @@ def save_drafts(problems: list[str], prefix: str, skip: Callable[[str], bool] = 
             continue
         ticket = draft_ticket(problem)
         (OUTPUT_FOLDER / f"{prefix}{number}.md").write_text(ticket, encoding="utf-8")
-        print(number, find_unsupported_numbers(ticket, problem))
+        print(f"{prefix}{number}", find_unsupported_numbers(ticket, problem))
 
 
 def draft_field_gap_tickets() -> None:
@@ -141,5 +141,17 @@ def draft_event_tickets() -> None:
     save_drafts(problems, "draft_events_")
 
 
-if __name__ == "__main__":
+def draft_all_tickets() -> None:
+    """Clear old drafts, then draft a ticket for every problem every check found."""
+    for old in OUTPUT_FOLDER.glob("*.md"):
+        old.unlink()
     draft_event_tickets()
+    draft_field_gap_tickets()
+    draft_missing_day_tickets()
+    draft_low_day_tickets()
+    draft_dependency_tickets()
+    draft_item_count_tickets()
+
+
+if __name__ == "__main__":
+    draft_all_tickets()

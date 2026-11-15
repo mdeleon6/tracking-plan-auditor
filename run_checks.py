@@ -94,9 +94,16 @@ def run_low_day_check() -> pd.DataFrame:
 
 def run_all_checks() -> dict:
     """Run every check and return the results together."""
+    repeated, checked = run_item_count_check()
     return {
         "events": run_event_check(),
         "field_gaps": run_field_check(),
+        "co_missing": run_co_missing_check(),
+        "coverage_drops": run_coverage_drop_check(),
+        "coverage_shifts": run_coverage_shift_check(),
+        "dependency_breaks": run_dependency_check(),
+        "repeated_item_counts": repeated,
+        "item_count_events_checked": checked,
         "missing_days": run_volume_check(),
         "low_days": run_low_day_check(),
     }
@@ -104,7 +111,14 @@ def run_all_checks() -> dict:
 
 if __name__ == "__main__":
     results = run_all_checks()
-    print(results["events"])
-    print(results["field_gaps"].to_string())
-    print({event: len(days) for event, days in results["missing_days"].items()})
-    print(len(results["low_days"]))
+    print("Planned events never received:", sorted(results["events"]["missing_in_data"]))
+    print("Events not in the plan:", sorted(results["events"]["not_in_plan"]))
+    print("Deprecated events still firing:", sorted(results["events"]["deprecated_still_firing"]))
+    print("Field gaps:", len(results["field_gaps"]))
+    print("Field pairs missing together:", int((results["co_missing"]["missing_both"] > 0).sum()))
+    print("Coverage drop days:", len(results["coverage_drops"]))
+    print("Coverage shift days:", len(results["coverage_shifts"]))
+    print("Dependency breaks:", len(results["dependency_breaks"]))
+    print("Events with repeated product counts:", sorted(results["repeated_item_counts"]["event_name"]))
+    print("Missing days:", {event: len(days) for event, days in results["missing_days"].items()})
+    print("Low days:", len(results["low_days"]))
