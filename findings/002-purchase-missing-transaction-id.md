@@ -14,7 +14,7 @@
 - Dec 30, 2020: 15 of 37 missing (22 of 37 had an ID). This day is part of the Nov 18–Jan 25 count. It was found by the automated coverage-by-day check, not the manual audit.
 - `ecommerce.transaction_id` is empty through Nov 10, partly filled Nov 11–12, then matches `event_params`.
 - The same 450 purchases are missing `transaction_id`, `value`, `tax`, `payment_type` and `purchase_revenue`, and all 450 also lack `shipping_tier` (see finding 003). Confirmed by the automated co-missing check, which counts purchases missing each pair of fields.
-- Queries: [`queries/06_purchase_transaction_ids.sql`](../queries/06_purchase_transaction_ids.sql), [`queries/21_purchase_param_keys.sql`](../queries/21_purchase_param_keys.sql)
+- Queries: [`queries/manual/06_purchase_transaction_ids.sql`](../queries/manual/06_purchase_transaction_ids.sql), [`queries/checks/purchase_field_keys.sql`](../queries/checks/purchase_field_keys.sql)
 
 ## Impact
 Purchase and revenue numbers cannot be trusted until this is explained. If these orders did not complete, purchase counts are being overstated. If they did complete, they are real sales that cannot be matched to order records or checked for duplicates. Because `value` and `tax` are missing on the same purchases, these orders count toward purchase totals but add nothing to revenue, so average order value is understated.

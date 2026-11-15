@@ -36,15 +36,15 @@ These problems affect the same event but happen on different dates, so they may 
 - No event has an empty `items` list.
 
 **Queries**
-- [`queries/10_items_coverage.sql`](../queries/10_items_coverage.sql)
-- [`queries/11_add_to_cart_empty_items.sql`](../queries/11_add_to_cart_empty_items.sql)
-- [`queries/12_items_per_add_to_cart.sql`](../queries/12_items_per_add_to_cart.sql)
-- [`queries/13_items_by_event.sql`](../queries/13_items_by_event.sql)
-- [`queries/14_quantity_per_add_to_cart.sql`](../queries/14_quantity_per_add_to_cart.sql)
-- [`queries/15_quantity_by_day.sql`](../queries/15_quantity_by_day.sql)
-- [`queries/16_daily_event_counts.sql`](../queries/16_daily_event_counts.sql) (automated checks)
-- [`queries/19_items_field_coverage_per_event.sql`](../queries/19_items_field_coverage_per_event.sql) (automated checks)
-- [`queries/22_items_per_event.sql`](../queries/22_items_per_event.sql) (automated checks)
+- [`queries/manual/10_items_coverage.sql`](../queries/manual/10_items_coverage.sql)
+- [`queries/manual/11_add_to_cart_empty_items.sql`](../queries/manual/11_add_to_cart_empty_items.sql)
+- [`queries/manual/12_items_per_add_to_cart.sql`](../queries/manual/12_items_per_add_to_cart.sql)
+- [`queries/manual/13_items_by_event.sql`](../queries/manual/13_items_by_event.sql)
+- [`queries/manual/14_quantity_per_add_to_cart.sql`](../queries/manual/14_quantity_per_add_to_cart.sql)
+- [`queries/manual/15_quantity_by_day.sql`](../queries/manual/15_quantity_by_day.sql)
+- [`queries/checks/daily_event_counts.sql`](../queries/checks/daily_event_counts.sql) (automated checks)
+- [`queries/checks/items_coverage_per_event.sql`](../queries/checks/items_coverage_per_event.sql) (automated checks)
+- [`queries/checks/items_per_event.sql`](../queries/checks/items_per_event.sql) (automated checks)
 
 ## Impact
 Cart-to-purchase rates will be wrong for November. Purchases were recorded on the 18 missing days but cart activity was not, including the days just before Black Friday.

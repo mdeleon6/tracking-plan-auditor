@@ -48,7 +48,8 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The low-volume check caught every drop of 70% or more, 2 of 9 at 55%, and none at 40% or below. Small test; low-volume events are noisier.
 
 ## Repo layout
-- `queries/`: the SQL for the investigation and the automated checks
+- `queries/manual/`: the SQL from the manual audit, fixed to the GA4 sample so the findings can be reproduced. 07 is missing because it became the field coverage check and moved to `queries/checks/`
+- `queries/checks/`: the SQL the automated checks run. Reads the table and date range from `settings.toml`
 - `findings/`: audit tickets and supporting results
 - `tracking_plan/`: the plan the data is checked against
 - `bq.py`: runs SQL files in BigQuery from Python

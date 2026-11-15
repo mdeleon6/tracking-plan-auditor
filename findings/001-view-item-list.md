@@ -13,7 +13,7 @@
 - 43 of the 71 events carry products, and all 43 carry exactly 12 (see finding 004).
 - Across the 10 category pages where it fired, `view_item_list` fired on ~0.03% of page loads (71 events / ~247,000 page views). Expected: ~100%, since every category page shows a product list.
 - Worst example: YouTube brand page, 1 event in 40,360 page views.
-- Queries: [`queries/02_daily_list_vs_select.sql`](../queries/02_daily_list_vs_select.sql), [`queries/04_fire_rate_by_page.sql`](../queries/04_fire_rate_by_page.sql), [`queries/16_daily_event_counts.sql`](../queries/16_daily_event_counts.sql) (automated checks)
+- Queries: [`queries/manual/02_daily_list_vs_select.sql`](../queries/manual/02_daily_list_vs_select.sql), [`queries/manual/04_fire_rate_by_page.sql`](../queries/manual/04_fire_rate_by_page.sql), [`queries/checks/daily_event_counts.sql`](../queries/checks/daily_event_counts.sql) (automated checks)
 
 ## Impact
 Product-list click-through rate (`select_item` ÷ `view_item_list`) can't be calculated, so we can't tell which category pages drive product clicks.
