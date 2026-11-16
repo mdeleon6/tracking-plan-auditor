@@ -11,6 +11,11 @@ def load_results() -> dict:
     return run_all_checks()
 
 
+def with_dates(table: pd.DataFrame) -> pd.DataFrame:
+    """Turn GA4's 20201101-style dates into real dates for display."""
+    return table.assign(event_date=pd.to_datetime(table["event_date"], format="%Y%m%d"))
+
+
 st.title("Results")
 if st.button("Run audit", type="primary", icon=":material/play_arrow:"):
     st.session_state["results"] = load_results()
@@ -54,16 +59,31 @@ with fields:
             "never_seen": st.column_config.CheckboxColumn("Never seen"),
         },
     )
+    st.subheader("Fields missing on the same purchases")
+    pairs = results["co_missing"]
+    st.dataframe(
+        pairs[pairs["missing_both"] > 0],
+        hide_index=True,
+        alt="Pairs of required fields missing on the same purchases",
+        column_config={
+            "event_name": "Event",
+            "field_a": "Field A",
+            "field_b": "Field B",
+            "missing_a": st.column_config.NumberColumn("Missing A"),
+            "missing_b": st.column_config.NumberColumn("Missing B"),
+            "missing_both": st.column_config.NumberColumn("Missing both"),
+        },
+    )
 with coverage:
     percent = {"format": "percent"}
     st.subheader("Days far below the field's usual coverage")
     st.dataframe(
-        results["coverage_drops"],
+        with_dates(results["coverage_drops"]),
         hide_index=True,
         alt="Days far below the field's usual coverage",
         column_order=["event_date", "event_name", "field_name", "present", "total", "coverage", "typical"],
         column_config={
-            "event_date": "Date",
+            "event_date": st.column_config.DateColumn("Date", format="MMM D, YYYY"),
             "event_name": "Event",
             "field_name": "Field",
             "present": st.column_config.NumberColumn("Sent"),
@@ -74,12 +94,12 @@ with coverage:
     )
     st.subheader("Days far below the week before")
     st.dataframe(
-        results["coverage_shifts"],
+        with_dates(results["coverage_shifts"]),
         hide_index=True,
         alt="Days far below the week before",
         column_order=["event_date", "event_name", "field_name", "present", "total", "before", "coverage", "after"],
         column_config={
-            "event_date": "Date",
+            "event_date": st.column_config.DateColumn("Date", format="MMM D, YYYY"),
             "event_name": "Event",
             "field_name": "Field",
             "present": st.column_config.NumberColumn("Sent"),
@@ -98,12 +118,12 @@ with volume:
     st.dataframe(missing, hide_index=True, alt="Days each event did not arrive")
     st.subheader("Days far below the usual count")
     st.dataframe(
-        results["low_days"],
+        with_dates(results["low_days"]),
         hide_index=True,
         alt="Days far below the usual count",
         column_order=["event_date", "weekday", "event_name", "event_count", "typical", "ratio"],
         column_config={
-            "event_date": "Date",
+            "event_date": st.column_config.DateColumn("Date", format="MMM D, YYYY"),
             "weekday": "Weekday",
             "event_name": "Event",
             "event_count": st.column_config.NumberColumn("Count"),
@@ -114,12 +134,12 @@ with volume:
 with types:
     st.subheader("Days with values of the wrong type")
     st.dataframe(
-        results["type_mismatches"],
+        with_dates(results["type_mismatches"]),
         hide_index=True,
         alt="Days with values of the wrong type",
         column_order=["event_date", "event_name", "field_name", "type", "wrong_type", "total", "text_values", "number_values", "empty_values"],
         column_config={
-            "event_date": "Date",
+            "event_date": st.column_config.DateColumn("Date", format="MMM D, YYYY"),
             "event_name": "Event",
             "field_name": "Field",
             "type": "Planned type",
