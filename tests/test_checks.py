@@ -101,6 +101,7 @@ def test_groups_fields_with_same_event_and_rate():
         "field_name": ["value", "tax", "shipping_tier"],
         "location": ["event_params", "event_params", "event_params"],
         "coverage_rate": [0.92, 0.92, 0.73],
+        "never_seen": [False, False, False],
         "measured_per": ["event", "event", "event"],
     })
     co_missing = pd.DataFrame({
@@ -121,7 +122,25 @@ def test_groups_fields_with_same_event_and_rate():
     assert any("used in: revenue" in p for p in problems)
     assert all("Records missing both value and shipping_tier: 8 " in p for p in problems)
     assert not any(": 3 (" in p for p in problems)
+    assert not any("never appeared" in p for p in problems)
 
+
+def test_describes_fields_that_never_appear():
+    gaps = pd.DataFrame({
+        "event_name": ["purchase"],
+        "field_name": ["transactionId"],
+        "location": ["event_params"],
+        "coverage_rate": [0.0],
+        "measured_per": ["event"],
+        "never_seen": [True],
+    })
+    co_missing = pd.DataFrame(columns=["event_name", "field_a", "field_b", "missing_a", "missing_b", "missing_both"])
+    drops = pd.DataFrame(columns=["event_name", "field_name", "event_date", "present", "total", "typical"])
+
+    problem = describe_field_gaps(gaps, {}, co_missing, drops)[0]
+
+    assert "- transactionId (location: event_params, measured per event; used in: not listed, never appeared in the data)" in problem
+    assert "such as a typo or a renamed field" in problem
 
 
 def test_flags_numbers_not_in_the_input():
@@ -448,3 +467,22 @@ def test_describes_type_mismatches_with_stretches_and_mixed_days():
     assert "- Nov 1, 2020 to Nov 3, 2020: 24 of 30 values (80.0%)" in problems[0]
     assert "- Nov 3, 2020: 4 of 10 as number" in problems[0]
     assert "Values with no content" not in problems[0]
+
+
+def test_field_gaps_mark_fields_that_never_appear():
+    required = pd.DataFrame({
+        "event_name": ["purchase", "purchase"],
+        "field_name": ["transaction_id", "transactionId"],
+        "measured_per": ["event", "event"],
+    })
+    coverage = pd.DataFrame({
+        "event_name": ["purchase"],
+        "field_name": ["transaction_id"],
+        "measured_per": ["event"],
+        "coverage_rate": [0.5],
+    })
+
+    gaps = find_field_gaps(required, coverage)
+
+    assert list(gaps["never_seen"]) == [False, True]
+    assert list(gaps["coverage_rate"]) == [0.5, 0.0]

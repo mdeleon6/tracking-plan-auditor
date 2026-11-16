@@ -100,7 +100,13 @@ def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co
         for _, row in rows.iterrows():
             unit = row["measured_per"]
             used = uses.get((event_name, row["field_name"]), "not listed")
-            lines.append(f"- {row['field_name']} (location: {row['location']}, measured per {unit}; used in: {used})")
+            never = ", never appeared in the data" if row["never_seen"] else ""
+            lines.append(f"- {row['field_name']} (location: {row['location']}, measured per {unit}; used in: {used}{never})")
+        if rows["never_seen"].any():
+            lines.append(
+                "A field that never appeared has no values at all in the data period. This can mean it is never sent, "
+                "or that its name in the tracking plan does not match the name in the data, such as a typo or a renamed field."
+            )
         if ((rows["location"] == "items") & (rows["measured_per"] == "event")).any():
             lines.append("The tracking plan expects these fields on one product per event, the product actually added, so an event counts as covered if at least one of its products has the field.")
         fields = set(rows["field_name"])

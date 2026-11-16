@@ -34,6 +34,7 @@ def find_field_gaps(
 ) -> pd.DataFrame:
     """Return required fields whose coverage is below min_coverage."""
     merged = required.merge(coverage, on=["event_name", "field_name", "measured_per"], how="left")
+    merged["never_seen"] = merged["coverage_rate"].isna()
     merged["coverage_rate"] = merged["coverage_rate"].fillna(0)
     return merged[merged["coverage_rate"] < min_coverage]
 

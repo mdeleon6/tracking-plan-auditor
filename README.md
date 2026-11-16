@@ -32,7 +32,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 **Working now**
 - Counts inside the database and downloads only totals (e.g. how many purchases sent each field on each day), never individual events. This keeps downloads small on large exports, and no user-level data leaves the warehouse
 - Compares the tracking plan with the data: planned events that never arrive, events missing from the plan, and deprecated events still being sent. Each becomes a ticket, using the plan's severity rating (e.g. `refund` never arrived: High, because net revenue depends on it)
-- Checks that required `event_params`, `items` and `ecommerce` fields, plus country, device and platform, are present on at least 99% of their events or products. The plan sets how each field is measured, so a field expected on one product per event (e.g. add_to_cart `quantity`) is checked per event
+- Checks that required `event_params`, `items` and `ecommerce` fields, plus country, device and platform, are present on at least 99% of their events or products. The plan sets how each field is measured, so a field expected on one product per event (e.g. add_to_cart `quantity`) is checked per event. A required field that never appears is reported as never seen, not 0%, since a typo or renamed field in the plan looks the same as a field that is never sent
 - Finds the days an event stopped arriving entirely
 - Flags days far below an event's typical count for that weekday. Typical counts ignore days with no data, and some false alarms are expected around holidays
 - Turns every check's results into problem descriptions and drafts a ticket for each with Claude (field gaps, missing days, low-volume days, planned events never received, event dependencies, repeated product counts). Claude must label any possible cause as unconfirmed and cannot calculate numbers. Days when many events drop together become one ticket
@@ -49,7 +49,6 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 
 **Planned**
 - Run the daily and co-missing checks on every event from the plan, not only purchase and add_to_cart (their SQL is already built from the plan)
-- Warn when a required field never appears in the data, instead of reporting 0% coverage
 - Move the check thresholds (e.g. 10 points, 7 days) into `settings.toml`
 - A step-by-step guide for running the audit on your own GA4 export and tracking plan
 - Extend planted bugs testing to the field checks
