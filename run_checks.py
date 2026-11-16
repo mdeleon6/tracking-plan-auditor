@@ -2,9 +2,9 @@
 from pathlib import Path
 import pandas as pd
 from bq import fill_settings, load_sql, run_query, load_settings
-from build_sql import items_coverage_per_product_sql, items_coverage_per_event_sql, daily_coverage_sql, co_missing_sql
+from build_sql import items_coverage_per_product_sql, items_coverage_per_event_sql, daily_coverage_sql, co_missing_sql, value_type_sql
 from checks import (
-    audit_events, find_field_gaps, find_coverage_drops,
+    audit_events, find_field_gaps, find_coverage_drops, find_type_mismatches,
     find_dependency_breaks, find_missing_days, find_low_days, find_repeated_item_counts,
     find_coverage_shifts
 )
@@ -98,6 +98,14 @@ def run_coverage_shift_check() -> pd.DataFrame:
     return find_coverage_shifts(counts, ["quantity"], min_records=min_records).assign(event_name="add_to_cart")
 
 
+def run_type_check() -> pd.DataFrame:
+    """Find days when an event_params field arrived with a different type than the plan sets."""
+    plan = load_field_plan()
+    rows = plan[(plan["location"] == "event_params") & (plan["status"] == "active")]
+    counts = run_query(fill_settings(value_type_sql(list(zip(rows["event_name"], rows["field_name"])))))
+    return find_type_mismatches(counts, rows)
+
+
 def run_dependency_check() -> pd.DataFrame:
     """Find events that fired more often than the event they require."""
     dependencies = load_dependencies()
@@ -131,6 +139,7 @@ def run_all_checks() -> dict:
         "co_missing": run_co_missing_check(),
         "coverage_drops": run_coverage_drop_check(),
         "coverage_shifts": run_coverage_shift_check(),
+        "type_mismatches": run_type_check(),
         "dependency_breaks": run_dependency_check(),
         "repeated_item_counts": repeated,
         "item_count_events_checked": checked,
@@ -148,6 +157,7 @@ if __name__ == "__main__":
     print("Field pairs missing together:", int((results["co_missing"]["missing_both"] > 0).sum()))
     print("Coverage drop days:", len(results["coverage_drops"]))
     print("Coverage shift days:", len(results["coverage_shifts"]))
+    print("Type mismatch days:", len(results["type_mismatches"]))
     print("Dependency breaks:", len(results["dependency_breaks"]))
     print("Events with repeated product counts:", sorted(results["repeated_item_counts"]["event_name"]))
     print("Missing days:", {event: len(days) for event, days in results["missing_days"].items()})

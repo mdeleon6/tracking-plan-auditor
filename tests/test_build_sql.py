@@ -1,4 +1,4 @@
-from build_sql import item_present, field_present, daily_coverage_sql, co_missing_sql
+from build_sql import item_present, field_present, daily_coverage_sql, co_missing_sql, value_type_sql
 
 
 def test_item_present_for_text_excludes_not_set():
@@ -38,3 +38,11 @@ def test_co_missing_sql_counts_each_pair_once():
     assert sql.count("UNION ALL") == 2
     assert "NOT ecommerce.purchase_revenue IS NOT NULL AS purchase_revenue" in sql
     assert "COUNTIF(transaction_id AND tax) AS missing_both" in sql
+
+
+def test_value_type_sql_only_counts_planned_pairs():
+    sql = value_type_sql([("purchase", "transaction_id"), ("add_to_cart", "ga_session_id")])
+    assert "(event_name = 'purchase' AND param.key = 'transaction_id') OR (event_name = 'add_to_cart' AND param.key = 'ga_session_id')" in sql
+    assert "COUNTIF(param.value.string_value IS NOT NULL) AS text_values" in sql
+    assert sql.endswith("GROUP BY event_date, event_name, field_name")
+

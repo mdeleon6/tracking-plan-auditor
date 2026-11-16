@@ -76,3 +76,17 @@ def items_coverage_per_event_sql(fields: list[tuple[str, str]]) -> str:
         for field, field_type in fields
     ]
     return "\nUNION ALL\n".join(blocks)
+
+
+def value_type_sql(fields: list[tuple[str, str]]) -> str:
+    """Write SQL counting, per day, the event_params values sent as text and as numbers. Fields are (event_name, field_name)."""
+    pairs = " OR ".join(f"(event_name = '{event}' AND param.key = '{field}')" for event, field in fields)
+    return (
+        "SELECT event_date, event_name, param.key AS field_name, "
+        "COUNTIF(param.value.string_value IS NOT NULL) AS text_values, "
+        "COUNTIF(param.value.int_value IS NOT NULL OR param.value.double_value IS NOT NULL OR param.value.float_value IS NOT NULL) AS number_values, "
+        "COUNT(*) AS total "
+        "FROM `{table}`, UNNEST(event_params) AS param "
+        "WHERE _TABLE_SUFFIX BETWEEN '{start_date}' AND '{end_date}' "
+        f"AND ({pairs}) GROUP BY event_date, event_name, field_name"
+    )

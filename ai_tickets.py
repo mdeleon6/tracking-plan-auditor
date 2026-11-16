@@ -10,11 +10,12 @@ from bq import load_settings
 from checks import find_missing_days, find_low_days, split_low_days
 from describe import (
     describe_field_gaps, describe_missing_days, describe_dependency_breaks, describe_event_audit,
-    describe_low_days_by_event, describe_low_days_together, describe_repeated_item_counts, format_stretch
+    describe_low_days_by_event, describe_low_days_together, describe_repeated_item_counts, format_stretch,
+    describe_type_mismatches
 )
 from plan import load_event_severities, load_event_uses, load_field_uses, load_holidays
 from run_checks import (
-    daily_event_counts, run_field_check, run_co_missing_check, run_event_check,
+    daily_event_counts, run_field_check, run_co_missing_check, run_event_check, run_type_check,
     run_coverage_drop_check, run_dependency_check, run_item_count_check, run_coverage_shift_check
 )
 
@@ -141,12 +142,18 @@ def draft_event_tickets() -> None:
     save_drafts(problems, "draft_events_")
 
 
+def draft_type_tickets() -> None:
+    problems = describe_type_mismatches(run_type_check(), load_field_uses(), data_period())
+    save_drafts(problems, "draft_type_")
+
+
 def draft_all_tickets() -> None:
     """Clear old drafts, then draft a ticket for every problem every check found."""
     for old in OUTPUT_FOLDER.glob("*.md"):
         old.unlink()
     draft_event_tickets()
     draft_field_gap_tickets()
+    draft_type_tickets()
     draft_missing_day_tickets()
     draft_low_day_tickets()
     draft_dependency_tickets()

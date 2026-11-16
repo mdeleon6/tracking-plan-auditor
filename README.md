@@ -20,6 +20,7 @@ A feature can look like it failed, or a campaign can look like it worked, when t
 - Dec 30, 2020: `transaction_id` and `purchase_revenue` on only 22 of 37 purchases, `shipping_tier` on 20
 - Jan 24, 2021: add_to_cart `quantity` on only 39.5% of events for one day
 - `purchase_revenue` missing on the same 450 purchases as `transaction_id`
+- Nov 1–12, 2020: purchase `transaction_id` arrived as a number instead of text on 456 purchases, switching over on Nov 11–12
 - `refund`, `view_cart`, `add_to_wishlist` and `remove_from_cart` never arrive, though the plan lists them as active
 
 Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`](findings/002-purchase-missing-transaction-id.md), [`shipping_tier`](findings/003-purchase-missing-shipping-tier.md), [`add_to_cart`](findings/004-add-to-cart-unreliable.md)
@@ -42,6 +43,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Counts purchases missing two required fields together, so linked gaps are backed by evidence (e.g. the same 450 purchases lack transaction_id, value, tax, payment_type and purchase_revenue, and all of them also lack shipping_tier)
 - Finds days when a required purchase field's coverage fell well below its normal level, grouped into stretches (e.g. transaction_id on 50 of 282 purchases on Jan 26–31). Found Dec 30, 2020, which the manual audit missed
 - Finds lasting drops by comparing each day with the week before it, and says whether the next day recovered (e.g. add_to_cart `quantity` fell from 88.6% to 57.0% on Dec 9, 2020 and stayed low; Jan 24, 2021 was a one-day dip)
+- Checks that each `event_params` field arrives as the type the plan sets, text or number, and lists the days when it didn't, including days when both types arrived (e.g. purchase `transaction_id` arrived as a number on 456 of 537 purchases on Nov 1–12, 2020, with both types on Nov 11–12)
 - Checks event dependencies from the plan (e.g. select_item can't outnumber view_item_list), using GA4 funnel defaults the analyst can edit. Works for web and apps alike
 - Flags events where most records with products carry the same product count above 1 (e.g. 90.7% of add_to_cart records carry exactly 12, and none carry more). Single-product records are ignored, since one item is normal
 
@@ -50,7 +52,6 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Warn when a required field never appears in the data, instead of reporting 0% coverage
 - Move the check thresholds (e.g. 10 points, 7 days) into `settings.toml`
 - A step-by-step guide for running the audit on your own GA4 export and tracking plan
-- Check data types
 - Extend planted bugs testing to the field checks
 - A Streamlit app to run the checks and review Claude's drafts in one place
 - Support for data stored as one table per event, not only GA4's single shared table

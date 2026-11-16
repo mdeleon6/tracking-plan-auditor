@@ -167,6 +167,37 @@ def describe_coverage_shifts(shifts: pd.DataFrame, event_name: str, fields: set[
     return lines
 
 
+def describe_type_mismatches(mismatches: pd.DataFrame, uses: dict[tuple[str, str], str], period: str) -> list[str]:
+    """Write one problem per event and field that arrived with a different type than the plan sets."""
+    problems = []
+    for (event_name, field), days in mismatches.groupby(["event_name", "field_name"]):
+        planned = days["type"].iloc[0]
+        received = "number" if planned == "string" else "string"
+        lines = [
+            "Check: field data type. A field is flagged when any value arrives as a different type than the tracking plan sets.",
+            f"Data period: {period}.",
+            f"Event: {event_name}",
+            f"Field: {field} (location: event_params; used in: {uses.get((event_name, field), 'not listed')})",
+            f"Type set by the tracking plan: {planned}. Some values arrived as: {received}.",
+            "Days with values of the wrong type (days not listed had none):",
+        ]
+        dates = pd.to_datetime(days["event_date"], format="%Y%m%d")
+        for start, end in group_consecutive_dates(set(days["event_date"])):
+            stretch = days[(dates >= start) & (dates <= end)]
+            wrong, total = int(stretch["wrong_type"].sum()), int(stretch["total"].sum())
+            lines.append(f"- {format_stretch(start, end)}: {wrong} of {total} values ({round(wrong / total * 100, 1)}%)")
+        mixed = days[days["wrong_type"] < days["total"]]
+        if not mixed.empty:
+            lines.append("Days when both types arrived:")
+            for _, day in mixed.iterrows():
+                lines.append(f"- {format_day(pd.to_datetime(day['event_date'], format='%Y%m%d'))}: {day['wrong_type']} of {day['total']} as {received}")
+        empty = int(days["empty_values"].sum())
+        if empty > 0:
+            lines.append(f"Values with no content on these days: {empty}.")
+        problems.append("\n".join(lines))
+    return problems
+
+
 def describe_dependency_breaks(breaks: pd.DataFrame, uses: dict[str, str]) -> list[str]:
     """Write one problem description per event that fired more often than the event it requires."""
     problems = []

@@ -68,6 +68,15 @@ def find_coverage_shifts(counts: pd.DataFrame, fields: list[str], window: int = 
     return pd.concat(shifts, ignore_index=True)
 
 
+def find_type_mismatches(counts: pd.DataFrame, plan: pd.DataFrame) -> pd.DataFrame:
+    """Return days when a field arrived with a different type than the plan sets, from the value type table."""
+    merged = counts.merge(plan[["event_name", "field_name", "type"]], on=["event_name", "field_name"])
+    merged["wrong_type"] = merged["number_values"].where(merged["type"] == "string", merged["text_values"])
+    merged["empty_values"] = merged["total"] - merged["text_values"] - merged["number_values"]
+    mismatches = merged[merged["wrong_type"] > 0]
+    return mismatches.sort_values(["event_name", "field_name", "event_date"]).reset_index(drop=True)
+
+
 def find_repeated_item_counts(counts: pd.DataFrame, min_share: float = 0.5) -> pd.DataFrame:
     """Return events where most records carry the same number of products, above 1."""
     counts = counts.assign(total=counts.groupby("event_name")["events"].transform("sum"))

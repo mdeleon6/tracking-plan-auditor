@@ -1,5 +1,5 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts, find_coverage_shifts
-from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts, describe_coverage_shifts, describe_event_audit
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts, find_coverage_shifts, find_type_mismatches
+from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts, describe_coverage_shifts, describe_event_audit, describe_type_mismatches
 from ai_tickets import find_unsupported_numbers
 import pandas as pd
 
@@ -408,3 +408,43 @@ def test_describes_event_audit():
     assert len(problems) == 2
     assert "Severity set by the tracking plan: High." in problems[0]
     assert "Events not in the plan: promo_click." in problems[1]
+
+
+def test_type_mismatches_flag_values_sent_as_the_wrong_type():
+    counts = pd.DataFrame({
+        "event_date": ["20201203", "20201201", "20201201", "20201202"],
+        "event_name": ["purchase"] * 4,
+        "field_name": ["transaction_id", "transaction_id", "value", "transaction_id"],
+        "text_values": [5, 8, 0, 10],
+        "number_values": [5, 2, 10, 0],
+        "total": [10, 10, 10, 10],
+    })
+    plan = pd.DataFrame({
+        "event_name": ["purchase", "purchase"],
+        "field_name": ["transaction_id", "value"],
+        "type": ["string", "number"],
+    })
+
+    mismatches = find_type_mismatches(counts, plan)
+
+    assert list(mismatches["event_date"]) == ["20201201", "20201203"]
+    assert list(mismatches["wrong_type"]) == [2, 5]
+
+def test_describes_type_mismatches_with_stretches_and_mixed_days():
+    mismatches = pd.DataFrame({
+        "event_date": ["20201101", "20201102", "20201103"],
+        "event_name": ["purchase"] * 3,
+        "field_name": ["transaction_id"] * 3,
+        "type": ["string"] * 3,
+        "total": [10, 10, 10],
+        "wrong_type": [10, 10, 4],
+        "empty_values": [0, 0, 0],
+    })
+
+    problems = describe_type_mismatches(mismatches, {("purchase", "transaction_id"): "order matching"}, "Nov 1, 2020 to Nov 3, 2020")
+
+    assert len(problems) == 1
+    assert "Type set by the tracking plan: string. Some values arrived as: number." in problems[0]
+    assert "- Nov 1, 2020 to Nov 3, 2020: 24 of 30 values (80.0%)" in problems[0]
+    assert "- Nov 3, 2020: 4 of 10 as number" in problems[0]
+    assert "Values with no content" not in problems[0]
