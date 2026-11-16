@@ -1,16 +1,18 @@
-# `add_shipping_info` events below half of typical volume on 12 days from Dec 26, 2020 to Jan 15, 2021
+# `add_shipping_info` below half of its typical count on 12 days between Dec 26, 2020 and Jan 15, 2021
 
 **Event:** add_shipping_info
 **Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-The `add_shipping_info` event was received at less than half its usual volume on 12 days between Dec 26, 2020 and Jan 15, 2021. The low volume check flags a day when an event's count falls below 0.5 of its typical count. The typical count is the median for that weekday. On the flagged days, the count was between 32.4% and 49.4% of typical.
+The automated low-volume check flagged `add_shipping_info` on 12 days between Dec 26, 2020 and Jan 15, 2021. On each of these days, fewer events were received than half of the event's typical count. The check defines "typical" as the median count for that weekday.
 
-The check results show only how many events were received. They do not show whether fewer users actually added shipping info or whether events were sent but not received. The cause has not been confirmed.
+On these 12 days, the counts received ranged from 32.4% to 49.4% of typical. The check results only show how many events were received. They do not show whether fewer shipping steps actually happened or whether events were sent but not received. The cause has not been confirmed.
 
-The event was also below threshold on 7 other days when many events dropped together. A separate multi-event ticket covers those days, so this ticket does not include them.
+These 12 days are listed separately from the days when many events dropped together. The event was also below threshold on those days, but they are covered in a separate multi-event ticket and are not part of this ticket.
 
 ## Evidence (Dec 26, 2020 – Jan 15, 2021)
+- Check: low volume. A day is flagged when the count is below 0.5 of the typical count for that weekday.
+- Number of flagged days in this ticket: 12.
 - Dec 26, 2020: 48 events, typical 148, 32.4% of typical
 - Dec 28, 2020: 101 events, typical 211, 47.9% of typical
 - Dec 29, 2020: 80 events, typical 233, 34.3% of typical
@@ -23,30 +25,28 @@ The event was also below threshold on 7 other days when many events dropped toge
 - Jan 10, 2021: 58 events, typical 129.5, 44.8% of typical
 - Jan 11, 2021: 94 events, typical 211, 44.5% of typical
 - Jan 15, 2021: 133 events, typical 269, 49.4% of typical
-- None of these 12 dates is on the holiday calendar in the tracking plan.
-- The 7 days covered by the separate multi-event ticket are Dec 24, 2020 (Christmas Eve, widely observed), Dec 25, 2020 (Christmas Day, widely observed), Dec 30, 2020, Dec 31, 2020 (New Year's Eve, widely observed), Jan 1, 2021 (New Year's Day, widely observed), Jan 4, 2021 and Jan 18, 2021 (Martin Luther King Jr. Day, US only).
-- The check results do not include the following:
-  - a total event count for the period
-  - counts on the days that were not flagged
-  - a breakdown by country or platform
-  - counts for other checkout events on these days
+- None of these 12 dates has a holiday name in the tracking plan's holiday calendar.
+- Not in this ticket: the event was also below threshold on 7 more days when many events dropped together. These are covered in a separate multi-event ticket: Dec 24, 2020, Dec 25, 2020, Dec 30, 2020, Dec 31, 2020, Jan 1, 2021, Jan 4, 2021 and Jan 18, 2021. The tracking plan's holiday calendar names Christmas Eve (Dec 24, widely observed), Christmas Day (Dec 25, widely observed), New Year's Eve (Dec 31, widely observed), New Year's Day (Jan 1, widely observed) and Martin Luther King Jr. Day (Jan 18, observed in the US only). Dec 30, 2020 and Jan 4, 2021 have no holiday name.
+- Missing from the check results:
+  - Counts for the days in this range that were not flagged.
+  - Total event counts for the period.
+  - Counts for the other checkout events on the 12 flagged days.
 
 ## Impact
-According to the tracking plan, `add_shipping_info` feeds the checkout funnel and the checkout conversion rate by country and platform. Checkout conversion rate is a key business number. Its values for the 12 flagged days cannot be trusted until someone confirms whether the drop reflects real user behavior or a tracking problem. The tracking plan rates this event High if it stopped arriving entirely.
+According to the tracking plan, `add_shipping_info` is used in the checkout funnel and in checkout conversion rate by country and platform. Checkout conversion rate is a key business number.
 
-This ticket is rated High because a key business number depends on this event. The event did not stop arriving, but on every flagged day it fell below half its typical volume.
+On the 12 flagged days, the event arrived at less than half its usual volume. Until it is confirmed whether this reflects real customer behavior or a tracking problem, the checkout funnel and checkout conversion rate for these days cannot be trusted, either overall or split by country and platform. This is why the severity is High.
 
-The days around these dates include named holidays. Possibly, and unconfirmed, the lower volume on some days reflects real changes in shopping behavior during this period. However, none of the 12 flagged days is itself on the holiday calendar, and this possibility does not explain the drop. These 12 days also fell below threshold while most other events did not drop with them, which is why they were not grouped into the multi-event ticket. The check results do not say whether other checkout events dropped on these days.
-
-The check results do not show which countries or platforms were affected. Any country or platform split of checkout conversion rate for these days may therefore be affected in ways not yet known.
+The tracking plan also rates this event High if it stopped arriving entirely. The event did not stop here; it arrived at reduced volume. The High rating in this ticket is based on the conversion rate depending on the event, not on the plan's rating.
 
 ## Suggested next steps
-- For each of the 12 days, compare `add_shipping_info` counts with the checkout funnel steps before and after it. A drop in this event alone would point toward a tracking problem. A drop across the whole funnel would point toward a real change in user behavior.
-- Break the flagged days down by country and platform to see whether the drop is limited to particular segments.
-- Find out whether any changes to the site, app or tracking setup were released around Dec 26, 2020, and whether any of them touched the shipping step of checkout.
-- Coordinate with the owner of the separate multi-event ticket. Together, decide whether this event's drop on those 7 days should be reviewed together with the 12 days in this ticket.
+- Check whether the funnel steps before and after `add_shipping_info` were also low on these 12 days. If the other steps look normal while this one is low, that would point toward a tracking problem. If they are low too, that would point toward real behavior. Either way, it would need to be confirmed.
+- Check whether any change to checkout or to the tracking of this event was released between late December 2020 and mid-January 2021.
+- Pull the daily counts for the days in this range that were not flagged, to see whether the event was also lower than usual on those days without falling below the threshold.
+- Split the flagged days by country and platform to see whether the drop is limited to particular segments.
+- Coordinate with the owner of the separate multi-event ticket, so the two tickets do not reach conflicting conclusions about the same event.
 
 ## Acceptance criteria
-- For each of the 12 flagged days, the drop is documented either as real user behavior, with supporting evidence from the other funnel steps, or as a tracking problem with a stated cause.
-- If the drop is a tracking problem, the fix is in place and missing events are restored where possible. The checkout conversion rate for affected days is then either corrected or clearly labelled as unreliable in reporting.
-- The country and platform breakdown of the drop is recorded, so that users of checkout conversion rate by country and platform know which segments were affected.
+- Each of the 12 flagged days has a documented explanation stating whether the low count reflects real activity or a tracking problem.
+- If it is a tracking problem, the cause is fixed. The affected days are then either backfilled or clearly marked so they can be excluded from the checkout funnel and checkout conversion rate reports.
+- From the fix onward, `add_shipping_info` stays at or above 0.5 of its typical count on every day, or any flagged day has a documented explanation.

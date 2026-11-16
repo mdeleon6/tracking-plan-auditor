@@ -1,52 +1,46 @@
-# view_item_list, add_to_cart, view_item and select_item mostly carry exactly 12 products per record, Nov 1 2020 to Jan 31 2021
+# Most `view_item_list`, `add_to_cart`, `select_item` and `view_item` records carry exactly 12 products from Nov 1, 2020 to Jan 31, 2021
 
-**Event:** view_item_list, add_to_cart, view_item, select_item
-**Found by:** · **Date found:** · **Severity:** High
+**Events:** view_item_list, add_to_cart, select_item, view_item
+**Found by:** · **Date found:** · **Severity:** Medium
 
 ## Description
-An automated check looks for events where most records that include products carry the same number of products, when that number is above 1. Four events were flagged: view_item_list, add_to_cart, view_item and select_item. For each of them, most records with products carry exactly 12 products, and no record carries more than 12.
+An automated check looks for events where most records with products carry the same number of products, above 1. Four events were flagged for Nov 1, 2020 to Jan 31, 2021. In each one, most records with products carry exactly 12 products, and no record carries more than 12.
 
-The tracking plan does not say how many products each event should carry. It is therefore not known whether 12 products per record is expected or a fault.
-
-begin_checkout, purchase, select_promotion and view_promotion were also checked and were not flagged.
+The tracking plan does not say how many products each event should carry, so the check results cannot show whether 12 is correct. One possible explanation is that something limits the product list to 12. This is unconfirmed: the check results do not show why the count repeats.
 
 ## Evidence (Nov 1, 2020 – Jan 31, 2021)
-- view_item_list: 43 of 43 records with products (100.0%) carry exactly 12 products. No record carries more than 12.
-- add_to_cart: 53094 of 58543 records with products (90.7%) carry exactly 12 products. No record carries more than 12.
-- view_item: 219633 of 241876 records with products (90.8%) carry exactly 12 products. No record carries more than 12.
-- select_item: 25085 of 31006 records with products (80.9%) carry exactly 12 products. No record carries more than 12.
-- Not flagged: begin_checkout, purchase, select_promotion, view_promotion.
-
-The following information is missing from the check results:
-- A day-by-day breakdown, so it is not known whether this happens across the whole period or starts on a particular date.
-- Whether the 12 products in a record are distinct or repeated, and whether they match what the user actually viewed, selected or added.
-- How the remaining records with products are distributed by product count.
-- How many records of each event carry no products at all.
+- **view_item_list:** 43 of 43 records with products (100.0%) carry exactly 12 products. No record carries more than 12.
+- **add_to_cart:** 53094 of 58543 records with products (90.7%) carry exactly 12 products. No record carries more than 12.
+- **select_item:** 25085 of 31006 records with products (80.9%) carry exactly 12 products. No record carries more than 12.
+- **view_item:** 219633 of 241876 records with products (90.8%) carry exactly 12 products. No record carries more than 12.
+- **Not flagged:** The check did not flag begin_checkout, purchase, select_promotion or view_promotion. This only means these events did not match this pattern. It does not show that their product data is complete or correct.
+- **Missing details:**
+  - The check results do not say how many products the remaining records carry.
+  - The check results do not say whether the 12 products are the same products from record to record.
+  - The check results do not give a breakdown by day.
 
 ## Impact
-According to the tracking plan, these events feed the following metrics:
-- **add_to_cart:** add-to-cart rate, cart-to-purchase conversion rate, and the checkout funnel.
-- **view_item:** product views, view-to-cart rate, and product performance by country and platform.
-- **select_item:** product list click-through rate and item selection reporting.
+According to the tracking plan, the flagged events feed these reports:
 - **view_item_list:** product list views and the list-to-product funnel step.
+- **add_to_cart:** add-to-cart rate, cart-to-purchase conversion rate and the checkout funnel.
+- **select_item:** product list click-through rate and item selection reporting.
+- **view_item:** product views, view-to-cart rate and product performance by country and platform.
 
-Severity is High because add_to_cart feeds add-to-cart rate and cart-to-purchase conversion rate, which are key conversion rates. Any metric that counts products rather than events, such as products added to cart, products viewed, or per-product performance, could be distorted if the 12 products do not reflect what users actually interacted with. Until it is confirmed what these products represent and how each metric is calculated, those numbers cannot be trusted. If it turns out that all of these metrics count events only and ignore products, the severity could be lowered.
+Any report that counts or breaks down by product could be distorted if the 12 products do not reflect what users actually saw, selected or added to the cart. Product performance by country and platform and item selection reporting are examples.
 
-There are some possible explanations, but none is confirmed by the check results:
-- No record carries more than 12 products. This could mean products are being capped at 12, which would leave some records incomplete.
-- Each event could be attaching a full list of products, rather than only the product the user interacted with.
+**Why Medium rather than High:** The flagged pattern is in the number of products per record, not in whether events were received. Purchase, which carries revenue, orders and units sold, was not flagged by this check. Those key numbers do not obviously depend on the flagged data, so the affected reporting is the product-level breakdowns.
 
-These four events were flagged together. That does not by itself mean they share a cause.
+However, the check results do not show how add-to-cart rate, cart-to-purchase conversion rate or view-to-cart rate are calculated. If any of these rates are built from product counts rather than event counts, a key conversion rate would be affected and this ticket should be raised to High. This has not been confirmed.
 
 ## Suggested next steps
-- Agree on and document in the tracking plan how many products each of these events is expected to carry.
-- Review a sample of flagged records for each event. Check whether the 12 products are distinct, and whether they match the product the user viewed, selected or added.
-- Confirm whether a limit of 12 products exists anywhere in how products are attached to events.
-- Get a day-by-day breakdown of the share of records carrying exactly 12 products, to see when this began.
-- Confirm whether add-to-cart rate, cart-to-purchase conversion rate, view-to-cart rate and product performance reports count events or count products. This shows which reported numbers are actually affected.
+- **Expected product counts:** Ask the tracking plan owner how many products each of the four events is meant to carry. Add that expectation to the tracking plan.
+- **Possible limit at 12:** Check whether the tracking implementation limits product lists to 12. This is a possible explanation only.
+- **Which products are sent:** For a sample of flagged records, compare the 12 products sent with what the user actually viewed, selected or added to the cart. Check whether the same 12 products repeat across records.
+- **Remaining records:** Review the add_to_cart, select_item and view_item records that do not carry 12 products. The check results do not describe them.
+- **Rate calculations:** Confirm whether add-to-cart rate, cart-to-purchase conversion rate and view-to-cart rate count events or products. Raise severity to High if they count products.
+- **Daily pattern:** Run a day-by-day view of the product count per record to see whether the pattern covers the whole period or starts at a certain point.
 
 ## Acceptance criteria
-- The tracking plan states the expected number of products for view_item_list, add_to_cart, view_item and select_item.
-- Records for these events carry product counts that match the tracking plan, and the products match what the user interacted with.
-- The repeated product count check no longer flags these events. Alternatively, if 12 products is confirmed as correct for any of them, that is documented in the tracking plan.
-- Each affected metric has a documented position on whether data from Nov 1, 2020 to Jan 31, 2021 can be used, and how.
+- The tracking plan states the expected number of products for view_item_list, add_to_cart, select_item and view_item.
+- The products sent on each of these events match what the user actually viewed, selected or added to the cart, with no limit unless the tracking plan defines one.
+- The repeated product counts check no longer flags these four events, or any remaining flag is explained by the documented expected product count.

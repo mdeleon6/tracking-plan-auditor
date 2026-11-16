@@ -1,32 +1,34 @@
-# view_item_list count was 25.0% of typical on Nov 18, 2020
+# `view_item_list` received 1 event on Nov 18, 2020, 25.0% of its typical count
 
 **Event:** view_item_list
 **Found by:** · **Date found:** · **Severity:** Low
 
 ## Description
-On Nov 18, 2020, the `view_item_list` event received 1 event. Its typical count for that day is 4, so the day was at 25.0% of typical. The low-volume check flags a day when an event's count falls below 0.5 of its typical count. The typical count is the median for that weekday. This is the only flagged day for this event.
+An automated low-volume check flagged one day for the `view_item_list` event. On Nov 18, 2020, 1 event was received. The typical count for that day is 4, so the day reached 25.0% of typical.
 
-Nov 18, 2020 falls between days with no data at all: Nov 16 to Nov 17, 2020 and Nov 19, 2020. Those no-data days are covered in a separate missing-day ticket and are not part of this one. It is possible, but not confirmed, that the low count on Nov 18 is related to them.
+The check flags a day when an event's count is below 0.5 of its typical count. "Typical" means the median count for that weekday.
 
-The check results do not list a holiday for Nov 18, 2020.
+The check results do not show why the count was low. Fewer events received on a day does not prove whether fewer list views actually happened or whether events were not recorded. Nov 18, 2020 is not on the holiday calendar in the tracking plan.
 
 ## Evidence
-- Check: low volume. A day is flagged when the count is below 0.5 of the typical count, which is the median for that weekday.
-- Nov 18, 2020: 1 event, typical 4, 25.0% of typical.
-- Number of flagged days for `view_item_list`: 1.
-- No query or supporting file was included in the check results.
+- Check: low volume, `view_item_list`.
+- Number of flagged days: 1.
+- Nov 18, 2020: 1 event received, typical 4, 25.0% of typical.
+- Nov 18, 2020 has no holiday name in the check results, so it is not on the tracking plan's holiday calendar.
+- The check results also list many days with no `view_item_list` data at all between Nov 12, 2020 and Jan 31, 2021. This includes Nov 17, 2020 and Nov 19, 2020, the days directly before and after the flagged day. Those days are covered in a separate missing-day ticket and are not part of this one. It has not been confirmed whether the low count on Nov 18 and the days with no data have anything in common.
 
 ## Impact
-According to the tracking plan, `view_item_list` is used in product list views and in the list-to-product funnel step. For Nov 18, 2020, the product list view count and the list-to-product funnel step may be understated. The check results only show what was received. They cannot show whether fewer list views happened that day or whether some were not recorded.
+According to the tracking plan, `view_item_list` is used in product list views and in the list-to-product funnel step. Counts and funnel figures that include Nov 18, 2020 may be understated for that day. The check results do not give a number for how many events may be missing.
 
-**Severity reasoning:** The tracking plan rates this event High if it stopped arriving entirely. That rating does not apply here, because this ticket covers one low day with some events received. The flagged day is a single day with a small count, so it is unlikely to change a decision on its own. That is why this ticket is Low rather than Medium or High. The no-data days for this event are handled in the separate missing-day ticket. If that ticket shows a wider tracking problem, this day should be reviewed as part of it.
+This is rated Low because it affects a single day with a small number of events. That is unlikely to change any decision on its own. No key business number such as revenue, orders, units sold or overall conversion rate is shown to depend on this one day.
+
+The tracking plan rates this event High if it stopped arriving entirely. That rating does not apply here, because events were still received on Nov 18, 2020. The days with no data are rated in their own ticket.
 
 ## Suggested next steps
-- Find out whether the single event on Nov 18, 2020 reflects actual list views or a partial loss of tracking.
-- Check other events on Nov 18, 2020 to see whether they also show low counts. This would help tell whether the drop is limited to `view_item_list`.
-- Coordinate with the owner of the separate missing-day ticket. Nov 18 sits between no-data days on Nov 16–17 and Nov 19, so it could be checked alongside them.
+- Confirm whether the low count on Nov 18, 2020 reflects real activity or events that were not recorded. Use a source outside this event's tracking if one exists.
+- Confirm how many weeks the typical count of 4 is based on. At volumes this small, a drop to 1 event may be ordinary variation rather than a tracking problem. Consider whether the 0.5 threshold is useful for this event.
+- Once the separate missing-day ticket is investigated, check whether its findings also explain Nov 18, 2020. Do not assume a shared cause until this is confirmed.
 
 ## Acceptance criteria
-- The Nov 18, 2020 count for `view_item_list` is either confirmed as real behavior or corrected through a re-pull.
-- If the data is re-pulled, the Nov 18, 2020 count no longer falls below 0.5 of its typical count, or the remaining gap is explained and documented.
-- Any analysis of product list views or the list-to-product funnel step that includes Nov 18, 2020 notes this day as flagged until the item is resolved.
+- The low count on Nov 18, 2020 is either confirmed as real activity or traced to a tracking issue, and the finding is recorded on this ticket.
+- If it is a tracking issue and the data can be recovered, the corrected count for Nov 18, 2020 is recorded. If it cannot be recovered, the list-to-product funnel reporting notes that Nov 18, 2020 is incomplete.

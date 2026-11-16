@@ -147,6 +147,7 @@ def test_groups_fields_with_same_event_and_rate():
 
     assert len(problems) == 2
     assert any("Gap to threshold: 7.0 percentage points" in p for p in problems)
+    assert any("Share of events or products missing each field: 8.0%." in p for p in problems)
     assert any("used in: revenue" in p for p in problems)
     assert all("Records missing both value and shipping_tier: 8 " in p for p in problems)
     assert not any(": 3 (" in p for p in problems)
@@ -282,6 +283,7 @@ def test_describes_days_when_many_events_drop_together():
     assert "rated High in the tracking plan if they stopped arriving entirely: purchase." in problem
     assert "- Dec 24, 2020 (Christmas Eve): 2 events below threshold: purchase 30.0%, view_item 40.0%" in problem
     assert "used in, according to the tracking plan: purchase: orders." in problem
+    assert "Days each affected event was below threshold, out of the days listed: purchase 2, view_item 1." in problem
 
     no_ratings = describe_low_days_together(together, {}, holidays, uses)[0]
     assert "if they stopped arriving entirely: none." in no_ratings

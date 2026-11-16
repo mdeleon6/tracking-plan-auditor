@@ -1,64 +1,54 @@
-# Purchase events fell below half of their typical daily count on 7 days between Nov 5, 2020 and Jan 8, 2021
+# `purchase` events below 0.5 of typical volume on 7 days between Nov 5, 2020 and Jan 8, 2021
 
 **Event:** purchase
 **Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-An automated low-volume check flagged the `purchase` event on 7 days between Nov 5, 2020 and Jan 8, 2021. On each of these days, the number of `purchase` events received was less than 0.5 of the typical count. "Typical" means the median count for that day of the week.
+On 7 days, the number of `purchase` events received was below 0.5 of the typical count for that day. The automated low-volume check flagged these days. The typical count is the median count for the same weekday.
 
-The check results only show how many events were received. They do not show whether fewer purchases actually happened on these days or whether purchases happened but were not recorded. Both are still possible.
+Four of the 7 days fall in a row, from Jan 5 to Jan 8, 2021. The other three are single days: Nov 5, 2020, Dec 29, 2020 and Jan 2, 2021. None of the 7 dates appears on the holiday calendar in the tracking plan.
 
-None of the 7 days has a holiday name in the check results. That means none of them is on the tracking plan's holiday calendar.
-
-The flagged days include Jan 5, 6, 7 and 8, 2021. The check results do not say whether these days share a cause with each other or with any other flagged day.
+The check results show only how many events were received. They do not show whether fewer purchases actually happened on these days or whether purchases happened but were not recorded. The cause is not known.
 
 ## Evidence (Nov 5, 2020 – Jan 8, 2021)
-- Nov 5, 2020: 26 events, typical 54, 48.1% of typical
-- Dec 29, 2020: 24 events, typical 60, 40.0% of typical
-- Jan 2, 2021: 14 events, typical 31, 45.2% of typical
-- Jan 5, 2021: 29 events, typical 60, 48.3% of typical
-- Jan 6, 2021: 31 events, typical 67, 46.3% of typical
-- Jan 7, 2021: 26 events, typical 54, 48.1% of typical
-- Jan 8, 2021: 34 events, typical 79, 43.0% of typical
-
-The check results also show `purchase` below the threshold on 6 more days. On those days, many events dropped at the same time. Those days are covered in a separate multi-event ticket and are not part of this one:
-- Dec 24, 2020 (Christmas Eve, widely observed)
-- Dec 25, 2020 (Christmas Day, widely observed)
-- Dec 31, 2020 (New Year's Eve, widely observed)
-- Jan 1, 2021 (New Year's Day, widely observed)
-- Jan 4, 2021
-- Jan 18, 2021 (Martin Luther King Jr. Day, US only)
-
-For those days, the holidays are a possible, unconfirmed explanation only.
-
-The following are missing from the check results:
-- Revenue amounts for the flagged days
-- A breakdown by country or platform
-- Event counts for the whole period
-- Any query or data extract
+- Check: low volume. A day is flagged when an event's count is below 0.5 of its typical count, which is the median for that weekday.
+- Flagged days for `purchase`:
+  - Nov 5, 2020: 26 events, typical 54, 48.1% of typical
+  - Dec 29, 2020: 24 events, typical 60, 40.0% of typical
+  - Jan 2, 2021: 14 events, typical 31, 45.2% of typical
+  - Jan 5, 2021: 29 events, typical 60, 48.3% of typical
+  - Jan 6, 2021: 31 events, typical 67, 46.3% of typical
+  - Jan 7, 2021: 26 events, typical 54, 48.1% of typical
+  - Jan 8, 2021: 34 events, typical 79, 43.0% of typical
+- `purchase` was also below the threshold on 6 more days. On those days many events dropped together, so they are covered in a separate multi-event ticket, not this one:
+  - Dec 24, 2020 (Christmas Eve, widely observed)
+  - Dec 25, 2020 (Christmas Day, widely observed)
+  - Dec 31, 2020 (New Year's Eve, widely observed)
+  - Jan 1, 2021 (New Year's Day, widely observed)
+  - Jan 4, 2021
+  - Jan 18, 2021 (Martin Luther King Jr. Day, US only)
+- Jan 4, 2021 is in the multi-event ticket and comes just before the Jan 5–8 run in this ticket. The check results do not show whether the two are related.
+- The check results do not include:
+  - the full date range the check covered
+  - counts broken down by country or platform
+  - revenue amounts for the flagged days
+  - whether other events were also low on these 7 days
 
 ## Impact
-The tracking plan uses `purchase` for:
-- orders
-- revenue
-- conversion rate
-- revenue and conversion by country and platform
+According to the tracking plan, `purchase` is used for orders, revenue, conversion rate, and revenue and conversion by country and platform. On the 7 flagged days, orders, revenue and conversion rate built from `purchase` events cannot be trusted until it is known whether the low counts reflect real activity. Any weekly, monthly or period total that includes these days may be affected as well.
 
-The tracking plan rates this event as High if it stopped arriving entirely.
-
-If the low counts come from purchases that happened but were not recorded, then orders, revenue and conversion rate are understated on these 7 days. Any totals or trends that include these days would also be affected. If the low counts reflect real behavior, those numbers are correct.
-
-Until this is resolved, we cannot tell which is true. Orders, revenue and conversion rate for these days cannot be trusted. That is why this ticket is High rather than Medium.
+The severity is High because orders, revenue and conversion rate are key business numbers and they depend directly on this event. The tracking plan also rates `purchase` as High if it stopped arriving entirely. The problem here is a partial drop on 7 days rather than a full stop. Even so, the affected numbers are the key ones, so High still applies.
 
 ## Suggested next steps
-- Compare the 7 flagged days against an independent record of orders, if one exists. This will show whether fewer purchases happened or whether purchases were not recorded.
-- Break down the flagged days by country and platform. This will show whether the drop is spread evenly or limited to one country or platform.
-- Find out whether any site, app or tracking changes were released on or just before Nov 5, 2020, Dec 29, 2020, Jan 2, 2021 or Jan 5, 2021.
-- Check whether the drop on Jan 5–8, 2021 has one cause or several separate causes. Do not assume they are linked to each other or to the days in the multi-event ticket.
+- Compare the `purchase` counts for the 7 flagged days against an independent record of orders, if one exists, to find out whether purchases are missing from tracking or whether fewer purchases happened.
+- Break down the flagged days by country and platform to see whether the drop is limited to one segment.
+- Check whether any tracking, site or app changes were released around Nov 5, Dec 29 and Jan 2–8. Treat any match as a lead to confirm, not as the cause.
+- Review the Jan 5–8 run alongside the multi-event ticket for Jan 4, 2021. Do not assume a shared cause until one is confirmed.
+- Agree how reports of orders, revenue and conversion should handle these days until the cause is known, for example by flagging them in dashboards.
 
 ## Acceptance criteria
-- Each of the 7 flagged days is confirmed as either real behavior or missing tracking. The evidence for each decision is recorded in this ticket.
-- If any day is confirmed as missing tracking, one of these happens:
-  - the missing purchases are recovered, or
-  - the day is clearly marked as incomplete in any report on orders, revenue or conversion rate.
-- Future runs of the low-volume check do not flag `purchase` for any cause found in this investigation.
+- Each of the 7 flagged days is either:
+  - confirmed as real lower purchase activity, using a source outside this tracking, with the finding documented, or
+  - corrected, with the low-volume check re-run and the day no longer flagged.
+- If a tracking fault is found, the fault is fixed and `purchase` volume stays at or above 0.5 of typical on later days, outside days covered by multi-event tickets.
+- A documented decision exists on how orders, revenue and conversion reporting treats any of the 7 days that cannot be corrected.

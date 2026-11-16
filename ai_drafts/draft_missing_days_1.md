@@ -1,49 +1,40 @@
-# add_to_cart has no data on 18 of 92 days from Nov 1, 2020 to Jan 31, 2021
+# `add_to_cart` has no data on 18 of 92 days from Nov 1, 2020 to Jan 31, 2021
 
 **Event:** add_to_cart
 **Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-The `add_to_cart` event has no rows on 18 of the 92 days between Nov 1, 2020 and Jan 31, 2021. The empty days fall in two blocks: Nov 2 to Nov 15, 2020 and Nov 21 to Nov 24, 2020. On every one of these days, at least one other event was received.
+The `add_to_cart` event has no rows on 18 of the 92 days between Nov 1, 2020 and Jan 31, 2021. The empty days fall in two date ranges: Nov 2–15, 2020 and Nov 21–24, 2020. At least one other event was received on every one of these days, so the data set as a whole is not empty on these dates. Several events tied to shopping and checkout, including `view_item`, `begin_checkout`, `add_shipping_info`, `add_payment_info` and `purchase`, were received on every day of the period.
 
-The check results do not show whether no one added items to a cart on these days or whether the activity happened and was not received. They also do not show why the gap exists.
+The check results show only that no `add_to_cart` rows were received on these days. They do not show whether people added items to their carts on those days, so it is not known whether this is a tracking gap or a real lack of activity.
 
-Two other events also have empty days that overlap with the `add_to_cart` gap: `select_item` and `view_item_list`. Both events also have empty days outside the `add_to_cart` gap. The overlap does not show that these gaps share a cause.
+Two other events also have empty days that overlap with these dates: `select_item` and `view_item_list`. These events appear together on some dates, but that does not show they have a shared cause.
 
 ## Evidence (Nov 1, 2020 – Jan 31, 2021)
-- Data period: Nov 1, 2020 to Jan 31, 2021 (92 days).
-- `add_to_cart` has no data on 18 of 92 days.
-- `add_to_cart` had 58543 events in total across the 74 days with data.
-- Dates with no `add_to_cart` data:
+- Found by the automated missing-days check, which flags any day in the data period on which an event has no rows.
+- `add_to_cart` has no data on 18 of 92 days:
   - Nov 2, 2020 to Nov 15, 2020
   - Nov 21, 2020 to Nov 24, 2020
-- At least one other event was received on every one of these 18 days.
-- These events have data on every day of the period: `add_payment_info`, `add_shipping_info`, `begin_checkout`, `click`, `first_visit`, `page_view`, `purchase`, `scroll`, `select_promotion`, `session_start`, `user_engagement`, `view_item`, `view_promotion`, `view_search_results`.
+- Total `add_to_cart` events received on the 74 days with data: 58543. The check results do not include daily counts, so it is not known whether volumes on those 74 days are complete or normal.
+- At least one other event was received on every one of the 18 days.
+- Events with data on every day of the period: `add_payment_info`, `add_shipping_info`, `begin_checkout`, `click`, `first_visit`, `page_view`, `purchase`, `scroll`, `select_promotion`, `session_start`, `user_engagement`, `view_item`, `view_promotion`, `view_search_results`.
 - `select_item` also has no data on 16 of the 18 days: Nov 2, 2020 to Nov 15, 2020, and Nov 21, 2020 to Nov 22, 2020. Across the whole period, `select_item` has no data on 22 days.
 - `view_item_list` also has no data on 4 of the 18 days: Nov 12, 2020 to Nov 14, 2020, and Nov 24, 2020. Across the whole period, `view_item_list` has no data on 59 days.
-- The check results do not include daily `add_to_cart` counts for the 74 days with data. They do not include an expected daily volume either. Without these, it is not possible to say how unusual the gap is or whether the 58543 total is complete.
+- The tracking plan sets the severity for this check to High.
 
 ## Impact
-The tracking plan sets this severity at High. This ticket keeps that rating.
+The tracking plan lists `add_to_cart` as an input to the add-to-cart rate, the cart-to-purchase conversion rate and the checkout funnel. These are key business numbers. On the 18 empty days, `view_item`, `begin_checkout` and `purchase` were all received but `add_to_cart` was not. Any of these numbers that covers these dates, whether for a single day or for the full period, cannot be trusted until the reason for the gap is known. The funnel would show people moving from viewing items to checkout and purchase with no add-to-cart step in between.
 
-The following uses of `add_to_cart` are affected for Nov 2–15 and Nov 21–24, 2020:
-- **Cart counts:** any count of cart additions that includes these dates.
-- **Daily trends:** any daily or weekly trend of cart additions that covers these dates.
-- **Conversion rates:** any rate built on cart additions for these dates, such as view-to-cart or cart-to-checkout.
+The severity is High, as set by the tracking plan. This rating fits the impact described above, because conversion rates depend directly on this event.
 
-The other funnel events `view_item`, `begin_checkout` and `purchase` were received on all of these days. This means that funnel steps before and after `add_to_cart` have rows on dates when `add_to_cart` has none. As a result, any funnel that uses `add_to_cart` for these dates will not be consistent from step to step.
-
-The 58543 total only covers the 74 days with data. The check results do not show whether `add_to_cart` data on those 74 days is complete, so that total should not be treated as confirmed.
+Rows on the other 74 days do not show that `add_to_cart` data is complete on those days. The total of 58543 events should not be treated as a full count for the period.
 
 ## Suggested next steps
-- **Find out whether `add_to_cart` should have been sent on these dates.** Check whether the event was live and expected to fire on Nov 2–15 and Nov 21–24, 2020.
-- **Look for changes around the gap.** Check for releases, tag changes or tracking configuration changes near the start and end of each block: Nov 2, Nov 15, Nov 21 and Nov 24, 2020. Any link between such a change and the gap is a possible cause only and is not confirmed.
-- **Check whether the data can be recovered.** Find out whether `add_to_cart` activity for these dates exists anywhere else and can be re-sent or re-pulled. If it is re-pulled, run the missing-days check again.
-- **Get the missing daily counts.** Pull daily `add_to_cart` counts for the full period and compare the days around each gap. This will show whether volume drops or changes before or after the empty days.
-- **Investigate `select_item` and `view_item_list` separately.** Each has empty days outside the `add_to_cart` gap: 22 days in total for `select_item` and 59 for `view_item_list`. Look into each one on its own rather than assuming a shared cause.
+- Confirm whether people added items to carts on Nov 2–15 and Nov 21–24, 2020, and whether `add_to_cart` events from those dates exist anywhere upstream and can be re-loaded.
+- Check whether the empty days for `select_item` and `view_item_list` are linked to the `add_to_cart` gap or are separate issues. `view_item_list` has empty days well beyond these dates and may need its own ticket.
+- Get daily `add_to_cart` counts for the full period to check whether the days around the two empty ranges show unusually low volumes. These counts are not in the check results.
+- Until this is resolved, tell owners of the add-to-cart rate, cart-to-purchase conversion rate and checkout funnel reports which dates are affected.
 
 ## Acceptance criteria
-- For each of the 18 dates, one of the following is true:
-  - `add_to_cart` has rows for that date.
-  - It is documented and confirmed that no `add_to_cart` activity was expected on that date.
-- Until this is resolved, any count, trend or conversion rate that uses `add_to_cart` either excludes or clearly flags Nov 2–15 and Nov 21–24, 2020.
+- `add_to_cart` has rows on every day from Nov 1, 2020 to Jan 31, 2021, or the empty days are confirmed and documented as a real lack of add-to-cart activity.
+- Until then, any report of add-to-cart rate, cart-to-purchase conversion rate or the checkout funnel that covers Nov 2–15 or Nov 21–24, 2020 excludes those dates or clearly flags them.

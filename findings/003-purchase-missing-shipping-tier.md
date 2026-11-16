@@ -1,4 +1,4 @@
-# 26.9% of purchases are missing shipping tiers from Nov 1 2020 to Jan 31 2021
+# 26.9% of purchases are missing `shipping_tier` from Nov 1, 2020 to Jan 31, 2021
 
 **Event:** purchase
 **Found by:** Martino DeLeon · **Date found:** 2026-11-06 · **Severity:** Medium

@@ -1,34 +1,30 @@
-# remove_from_cart has 0 rows from Nov 1, 2020 to Jan 31, 2021
+# `remove_from_cart` was never received from Nov 1, 2020 to Jan 31, 2021
 
 **Event:** remove_from_cart
 **Found by:** · **Date found:** · **Severity:** Low
 
 ## Description
-The tracking plan lists `remove_from_cart` as an active event, but the data has no rows for it between Nov 1, 2020 and Jan 31, 2021. The automated planned-events check flagged it. This check flags any event that the tracking plan marks as active but that never appears in the data.
+The tracking plan lists `remove_from_cart` as an active event, but no rows for it were received at any point from Nov 1, 2020 to Jan 31, 2021. The automated planned-events check flagged it. That check flags any event the tracking plan marks as active that never appears in the data.
 
-The check results do not say why there are no rows. This ticket does not assume whether the event is not being sent or whether no cart removals happened. Either is possible, and neither has been confirmed.
+The check results do not say why the event is absent. Zero rows shows only that nothing was received. It does not show whether shoppers removed items from their carts during this period.
 
 ## Evidence (Nov 1, 2020 – Jan 31, 2021)
 - Rows received for `remove_from_cart` in the whole period: 0.
-- Source: the automated planned-events check.
-- The check results do not include:
-  - when `remove_from_cart` was added to the tracking plan
-  - whether it was expected to be active for the whole period
-  - whether rows exist for any dates outside this period
+- Tracking plan status for `remove_from_cart`: active.
+- Tracking plan use for `remove_from_cart`: cart removal reporting.
+- Source: automated planned-events check.
 
 ## Impact
-According to the tracking plan, `remove_from_cart` is used in cart removal reporting. With no rows received in this period, that reporting has no data to show for Nov 1, 2020 to Jan 31, 2021.
+Cart removal reporting has no data for this period. Any view of cart removals for Nov 1, 2020 to Jan 31, 2021 will be empty or show zero. Nobody can tell from the data whether that reflects real shopper behavior or a tracking gap.
 
-The check results do not say whether any key business number, such as revenue, orders, units sold or conversion rates, uses this event. They also do not say whether anyone makes decisions from cart removal reporting.
-
-**Severity:** Low, as set by the tracking plan. That rating fits if cart removal reporting is not used for decisions. If teams do act on it, the problem would be closer to Medium. In that case one type of reporting would be empty, but based on the check results no key business number depends on it. The plan owner should confirm which applies (see next steps).
+Severity is Low because the tracking plan sets it to Low. According to the plan, the event is used only in cart removal reporting. The check results do not show any key business number, such as revenue, orders, units sold or conversion rates, that depends on this event.
 
 ## Suggested next steps
-- Confirm with the owner of the tracking plan whether `remove_from_cart` has been built and released, and from what date it was expected to send data.
-- Check whether the site or app sends `remove_from_cart` when an item is removed from the cart, for example by removing an item in a test session and seeing whether an event is recorded.
-- Ask the owners of cart removal reporting whether anyone uses it, and whether it showed empty or unexpected results for this period.
-- Ask the tracking plan owner to review the Low rating once it is known whether cart removal reporting is used for decisions.
+- Confirm whether `remove_from_cart` was ever built and released, or whether it is listed as active in the tracking plan before being implemented.
+- Confirm whether the site or app lets shoppers remove items from their cart. This will show whether the event should be expected at all.
+- Find out who uses cart removal reporting and whether the missing period affects any decisions they make.
+- If cart removal reporting turns out to feed any key business number, ask the tracking plan owner to review the Low rating.
 
 ## Acceptance criteria
-- Either `remove_from_cart` rows appear in the data when items are removed from the cart, or the tracking plan is updated so it no longer lists the event as active.
-- Cart removal reporting notes that there is no `remove_from_cart` data for Nov 1, 2020 to Jan 31, 2021, unless that data is later recovered.
+- `remove_from_cart` events are received whenever a shopper removes an item from their cart. Alternatively, the tracking plan is updated to mark the event as not active if it is not meant to be sent.
+- Cart removal reporting notes that no `remove_from_cart` data exists for Nov 1, 2020 to Jan 31, 2021. Zero rows for this period should not be read as zero cart removals.

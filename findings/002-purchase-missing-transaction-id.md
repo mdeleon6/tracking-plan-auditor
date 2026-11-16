@@ -1,4 +1,4 @@
-# 7.9% of Purchases missing transaction ids from Nov 1 2020 - Jan 31 2021
+# 7.9% of purchases are missing `transaction_id` from Nov 1, 2020 to Jan 31, 2021
 
 **Event:** purchase
 **Found by:** Martino DeLeon · **Date found:** 2026-11-04 · **Severity:** High

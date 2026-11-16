@@ -89,20 +89,28 @@ def draft_ticket(problem: str) -> str:
 def find_unsupported_numbers(ticket: str, problem: str) -> set[str]:
     """Return numbers in the ticket that do not appear in the problem text."""
     pattern = r"\d+(?:\.\d+)?"
+    ticket = re.sub(r"(?<=\d),(?=\d{3})", "", ticket)
     ticket_numbers = set(re.findall(pattern, ticket))
     problem_numbers = set(re.findall(pattern, problem))
     return ticket_numbers - problem_numbers
 
 
+def find_severity(ticket: str) -> str | None:
+    """Return the severity from the ticket header, or None if it is not High, Medium or Low."""
+    match = re.search(r"\*\*Severity:\*\* (High|Medium|Low)\s*$", ticket, re.MULTILINE)
+    return match.group(1) if match else None
+
+
 def save_drafts(problems: list[str], prefix: str, skip: Callable[[str], bool] = lambda problem: False) -> None:
-    """Draft a ticket for each problem, save it, and print any numbers not in the check results."""
+    """Draft a ticket for each problem, save it, and print its severity and any numbers not in the check results."""
     OUTPUT_FOLDER.mkdir(exist_ok=True)
     for number, problem in enumerate(problems, start=1):
         if skip(problem):
             continue
         ticket = draft_ticket(problem)
         (OUTPUT_FOLDER / f"{prefix}{number}.md").write_text(ticket, encoding="utf-8")
-        print(f"{prefix}{number}", find_unsupported_numbers(ticket, problem))
+        severity = find_severity(ticket) or "SEVERITY MISSING"
+        print(f"{prefix}{number}", severity, find_unsupported_numbers(ticket, problem))
 
 
 def draft_field_gap_tickets() -> None:

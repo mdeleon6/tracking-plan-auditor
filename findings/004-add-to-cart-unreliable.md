@@ -1,4 +1,4 @@
-# 90.7% of `add_to_cart` events carry exactly 12 products, and 18 days have no data (Nov 1 2020 - Jan 31 2021)
+# 90.7% of `add_to_cart` events carry exactly 12 products, and 18 days have no data (Nov 1, 2020 to Jan 31, 2021)
 
 **Event:** add_to_cart
 **Found by:** Martino DeLeon · **Date found:** 2026-11-06 · **Severity:** High

@@ -1,47 +1,51 @@
-# `select_item` events dropped to 16.6% of typical volume on Nov 23, 2020
+# `select_item` received at 16.6% of typical volume on Nov 23, 2020
 
 **Event:** select_item
 **Found by:** · **Date found:** · **Severity:** Medium
 
 ## Description
-On Nov 23, 2020, 59 `select_item` events were received, compared with a typical count of 356, which is 16.6% of typical. "Typical" here means the median count for the same weekday. The low-volume check flags a day when an event's count falls below 0.5 of typical, and this day falls well under that line.
+On Nov 23, 2020, 59 `select_item` events were received. The typical count for that day is 356, so the day came in at 16.6% of typical. This is the only day flagged for this event in this ticket.
 
-Nov 23, 2020 is the only day flagged for this event in this ticket. It is not on the holiday calendar in the tracking plan.
-
-The check results also show that `select_item` has no data at all from Nov 1, 2020 to Nov 22, 2020, so Nov 23 is the first day with data after that gap. A possible, unconfirmed explanation is that data collection for this event resumed partway through Nov 23, which would leave only part of the day recorded. The check results do not confirm this, and the two problems may not share a cause.
+The low-volume check flags a day when an event's count falls below 0.5 of its typical count. The typical count is the median for the same weekday. This check only shows what was received. It cannot show whether fewer item selections actually happened that day or whether events were lost before they reached the data.
 
 ## Evidence
-- Nov 23, 2020: 59 `select_item` events received, typical 356, 16.6% of typical.
-- Flag rule: a day is flagged when the count is below 0.5 of the median for that weekday.
-- Number of days flagged for this ticket: 1.
-- No queries were included in the check results.
-
-**Covered in separate tickets, not part of this one:**
-- Dec 31, 2020 (New Year's Eve, widely observed): `select_item` was also below the threshold on this day, but many events dropped together. This is covered in a separate multi-event ticket.
-- Nov 1, 2020 to Nov 22, 2020: no `select_item` data was received on these days. This is covered in a separate missing-day ticket.
+- **Flagged day:** Nov 23, 2020 had 59 events, against a typical count of 356 (16.6% of typical).
+- **Holiday calendar:** Nov 23, 2020 has no holiday name in the check results, which means it is not on the tracking plan's holiday calendar.
+- **No data before this day:** The check results show no `select_item` data at all from Nov 1, 2020 to Nov 22, 2020. Nov 23 is the first day after that range. A separate missing-day ticket covers that range, and it is not part of this ticket. The check results do not show whether the two problems are connected.
+- **Other low day:** `select_item` was also below the threshold on 1 other day, Dec 31, 2020 (New Year's Eve: widely observed), when many events dropped together. A separate multi-event ticket covers that day, and it is not part of this ticket.
+- **Missing information:** The check results do not include the following:
+  - counts for other events on Nov 23, 2020
+  - counts for `select_item` on the days after Nov 23
+  - the time of day at which events arrived on Nov 23
 
 ## Impact
-According to the tracking plan, `select_item` is used for product list click-through rate and item selection reporting.
+According to the tracking plan, `select_item` is used in:
+- product list click-through rate
+- item selection reporting
 
-- **Click-through rate:** for Nov 23, 2020, this rate may be understated if the clicks were not fully received.
-- **Item selection reporting:** any weekly or monthly totals that include Nov 23, 2020 may be understated.
+If the low count on Nov 23, 2020 does not reflect real behavior, then both of these are unreliable for that day. Any weekly or monthly figure that includes that day would also be affected. The size of the effect on those longer periods is not in the check results.
 
-The check results only show what was received. They cannot tell us whether fewer item selections actually happened that day or whether events were not captured.
+**Severity: Medium.** The reasons are:
+- Product list click-through rate and item selection reporting are secondary measures. According to the tracking plan, no key business number depends on this event, such as revenue, orders, units sold or overall conversion.
+- The problem affects one day only. However, the drop is large: 59 events against a typical 356.
+- The tracking plan rates this event Medium even if it stopped arriving entirely. A one-day drop should not be rated higher than that.
 
-**Why Medium:**
-- The affected numbers are a secondary rate and one reporting area.
-- None of the key business numbers named in the severity guidelines (revenue, orders, units sold or conversion rates) are listed as depending on this event.
-- The tracking plan rates a complete stop of this event as Medium. A drop on a single day should not rank higher than that.
-- It is not rated Low, because the drop is large enough to make that day's click-through rate unreliable for anyone reading daily figures.
+**Possible explanations (unconfirmed):**
+- Nov 23 directly follows a range with no `select_item` data. One possibility is that tracking was only partly working on its first day back.
+- Another possibility is that activity was genuinely low that day.
+
+Neither explanation is supported by the check results.
 
 ## Suggested next steps
-- Find out when `select_item` tracking started or resumed after the Nov 1–22 gap. Check whether events on Nov 23 arrive across the whole day or only from a certain time onward.
-- Check whether other events also show low counts on Nov 23, 2020. The check results do not list this date as a multi-event day, so this is still unknown.
-- If events for Nov 23 can be recovered, re-load them and re-run the low-volume check for that date.
-- If the events cannot be recovered, agree with the people who own product list click-through rate how to treat Nov 23, 2020 in reporting.
+- Find out whether `select_item` tracking started or was restored on Nov 23, 2020, and at what time. If it resumed partway through the day, that could account for part of the low count. Confirm this before treating it as the cause.
+- Compare Nov 23, 2020 with the event used as the denominator of product list click-through rate. The name of that event is not in the check results. If that event was normal on Nov 23 while `select_item` was low, the day's click-through rate will look artificially low.
+- Check whether other events were also low on Nov 23, 2020. This will show whether the drop was limited to `select_item`.
+- Check the `select_item` counts for the days after Nov 23, 2020 to confirm volume returned to typical levels.
+- Find out whether the source system can resend data for Nov 23, 2020. If it can, re-run the low-volume check on the resent data.
 
 ## Acceptance criteria
-- The reason for the low count on Nov 23, 2020 is confirmed and written on this ticket. This includes whether it is related to the Nov 1–22 missing-day gap.
-- One of the following is true:
-  - The Nov 23, 2020 count is no longer flagged by the low-volume check after any re-load.
-  - The date is clearly marked or excluded wherever product list click-through rate and item selection reporting are shown.
+One of the following is true:
+- The `select_item` count for Nov 23, 2020 is restored to at least 0.5 of its typical count, and the low-volume check no longer flags the day.
+- The low count is confirmed as either real behavior or a known tracking gap, and the finding is recorded in the tracking plan.
+
+In addition, if the day cannot be corrected, any product list click-through rate or item selection report covering Nov 23, 2020 carries a note that `select_item` was at 16.6% of typical on that day.

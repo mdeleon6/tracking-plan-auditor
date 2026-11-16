@@ -4,31 +4,39 @@
 **Found by:** · **Date found:** · **Severity:** High
 
 ## Description
-The tracking plan lists `refund` as an active event, but the check results show no `refund` rows at all between Nov 1, 2020 and Jan 31, 2021. The automated planned-events check flagged this. It flags any event that the tracking plan marks as active but that never appears in the data.
+The tracking plan lists `refund` as an active event, but the check results show no `refund` rows were received at any point between Nov 1, 2020 and Jan 31, 2021. The automated planned-events check flagged this. That check flags any event that the tracking plan lists as active but that never appears in the data.
 
-The check results do not show whether any refunds actually took place in this period. Zero rows could mean refunds happened and were not recorded, or that no refunds happened. The check results do not confirm which one is true, and they do not give a cause.
+The check results only show what was received. They do not show whether any refunds actually took place in this period. The cause is not confirmed. Possible explanations include:
+- the event was never sent
+- the event was sent under a different name
+- no refunds occurred
 
 ## Evidence (Nov 1, 2020 – Jan 31, 2021)
-- Check: planned events. It flags events that the tracking plan lists as active but that never appear in the data.
 - Rows received for `refund` in the whole period: 0.
-- Tracking plan status for `refund`: active.
-- Tracking plan lists `refund` as used in: refunds, net revenue.
-- The check results do not include an expected number of refunds for this period, so it is not possible to say how many, if any, may be missing.
-- The check results do not include a query or file reference.
+- The tracking plan lists `refund` as active.
+- According to the tracking plan, `refund` is used in refunds and net revenue reporting.
+- Source: automated planned-events check.
 
 ## Impact
-According to the tracking plan, `refund` feeds the refunds reporting and net revenue. Net revenue is a key business number. If any refunds took place in this period, they are not in the data, so the refund figures and net revenue for Nov 1, 2020 to Jan 31, 2021 cannot be trusted until someone confirms whether refunds occurred.
+The tracking plan sets the severity to High.
 
-The tracking plan sets the severity to High. This matches the severity guidance, because a key business number (net revenue) depends on this event.
+The tracking plan says `refund` feeds both refunds and net revenue. With no `refund` rows in the period, neither number can be trusted for Nov 1, 2020 to Jan 31, 2021:
+- **Refunds:** any refund total for this period will show nothing. The check results cannot tell us whether that reflects real activity or missing tracking.
+- **Net revenue:** if refunds did occur and were not recorded, net revenue for this period would not account for them.
+
+Net revenue is a key business number, which supports the High rating.
+
+The check results do not include any refund counts or amounts from another source. The size of any gap is therefore unknown.
 
 ## Suggested next steps
-- Find out from a source outside this tracking data whether any refunds were issued between Nov 1, 2020 and Jan 31, 2021. This will show whether the zero count reflects missing tracking or a real absence of refunds.
-- Confirm whether `refund` tracking was actually built and released before Nov 1, 2020. If it was not, ask the tracking plan owner whether the event should be listed as active for this period.
-- Check whether refunds might be recorded under a different event name or inside another event. Treat this as an open question; it has not been confirmed.
-- Identify any net revenue or refund reports that cover this period, so their users know the figures may be incomplete.
+- Confirm whether the `refund` event was ever implemented and released, and if so, from what date.
+- Check whether refund activity is being sent under a different event name than the one in the tracking plan.
+- Compare against any independent record of refunds for Nov 1, 2020 to Jan 31, 2021, if one exists. This would show whether refunds took place in this period.
+- Identify any reports or analyses of refunds or net revenue that cover this period, and flag them as unreliable until this is resolved.
 
 ## Acceptance criteria
-- The ticket records whether refunds occurred between Nov 1, 2020 and Jan 31, 2021, based on a source outside this tracking data.
-- If refunds occurred, a `refund` event is received for each refund going forward, and its count matches the independent refund record.
-- The tracking plan status for `refund` is correct for every date range it covers.
-- Net revenue and refund reports that cover Nov 1, 2020 to Jan 31, 2021 are either corrected or clearly marked as possibly incomplete.
+- When a refund occurs, a `refund` event is received, matching the name listed in the tracking plan.
+- For Nov 1, 2020 to Jan 31, 2021, one of the following is documented:
+  - the refund activity is confirmed and backfilled where possible, or
+  - it is confirmed that no refunds occurred, and the tracking plan is checked to make sure `refund` is correctly marked as active.
+- Refunds and net revenue reporting for this period carry a note explaining the outcome.

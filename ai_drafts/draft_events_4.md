@@ -1,30 +1,39 @@
-# view_cart is listed as active in the tracking plan but has 0 rows from Nov 1, 2020 to Jan 31, 2021
+# `view_cart` has 0 rows from Nov 1, 2020 to Jan 31, 2021, although the tracking plan lists it as active
 
 **Event:** view_cart
 **Found by:** · **Date found:** · **Severity:** Medium
 
 ## Description
-The tracking plan lists `view_cart` as an active event, but the check results show no rows for it at any point from Nov 1, 2020 to Jan 31, 2021. According to the tracking plan, the checkout funnel uses this event.
+The tracking plan lists `view_cart` as an active event, but the check results show 0 rows for it in the data from Nov 1, 2020 to Jan 31, 2021. According to the tracking plan, the checkout funnel uses this event.
 
-The check results do not say why the event is absent. Having no rows does not show whether people viewed their carts during this period. It only shows that no `view_cart` data was received. The check results do not confirm whether the event was ever implemented, was sent under another name, or stopped being sent before the period began.
+The check results show only what was received. They do not show whether people viewed their carts during this period, and they do not show why no rows arrived.
 
 ## Evidence (Nov 1, 2020 – Jan 31, 2021)
-- Rows received for `view_cart` across the whole period: 0.
-- The automated planned events check flagged this event. That check flags any event that the tracking plan lists as active but that never appears in the data.
-- Tracking plan status for `view_cart`: active.
-- Tracking plan usage for `view_cart`: checkout funnel.
+- Check: planned events. This check flags any event that the tracking plan lists as active but that never appears in the data.
+- Rows received for `view_cart` in the whole period: 0.
+- Where the event is used, according to the tracking plan: checkout funnel.
+- Severity set by the tracking plan: Medium.
+- The check results do not include any information about other events, other dates or other data sources.
 
 ## Impact
-The checkout funnel cannot be reported as planned for this period, because one of its listed events has no data. Any step in the funnel that relies on `view_cart`, and any step-to-step rate that starts or ends at that step, will be missing or misleading.
+The checkout funnel cannot show the `view_cart` step for this period. Any funnel step that relies on `view_cart`, such as movement into or out of the cart view, has no data to report.
 
-The tracking plan sets the severity to Medium. The check results do not say whether any key business number depends on `view_cart`, such as an overall checkout conversion rate that is calculated through this step. If no key number depends on it, the effect is limited to one type of breakdown, which fits Medium. If a reported conversion rate is calculated through this step, the problem could be more serious than the plan's rating suggests. That is why one of the next steps below asks for a review.
+The tracking plan sets the severity to Medium, and this ticket keeps that rating. The check results do not show whether any key business number depends on `view_cart`, such as orders, revenue or overall conversion. If the checkout funnel only counts users who pass through every step in order, the missing step could also affect funnel conversion figures. The check results do not confirm how the funnel is built.
+
+Possible explanations include the following. None of them is confirmed by the check results:
+- The event was never built.
+- The event is sent under a different name.
+- The tracking plan lists the event as active when it is not in use.
 
 ## Suggested next steps
-- Ask the tracking plan owner to confirm whether `view_cart` was meant to be live during Nov 1, 2020 – Jan 31, 2021, and if so, from what date.
-- Check whether cart views are being recorded under a different event name. This is one possible explanation, but it is unconfirmed.
-- Find out how the checkout funnel currently handles the missing `view_cart` step, and whether any reported conversion rate is calculated through it.
-- Ask the tracking plan owner to review the Medium rating in light of the checkout funnel usage, especially if a key conversion rate depends on this step.
+- Ask the tracking plan owner whether `view_cart` was expected to be live at any point between Nov 1, 2020 and Jan 31, 2021, and since what date.
+- Check whether the site or app sends a cart-view event under another name. If it does, decide whether to rename that event or update the tracking plan.
+- Find out how the checkout funnel is defined and whether it requires `view_cart` for users to count in later steps.
+- If the funnel does require `view_cart`, ask the tracking plan owner to review the Medium rating, because funnel conversion figures may then be affected.
+- Review any checkout funnel reports covering Nov 1, 2020 to Jan 31, 2021 and note that they have no `view_cart` data.
 
 ## Acceptance criteria
-- Either `view_cart` rows are received in the data while the event is listed as active, or the tracking plan is updated so that `view_cart` is no longer listed as active.
-- The checkout funnel documentation states which dates have no `view_cart` data, so that nobody reads the missing step as zero cart views.
+- One of these is true:
+  - `view_cart` rows appear in the data and the planned events check no longer flags the event.
+  - The tracking plan is updated to show that `view_cart` is not active, and the checkout funnel no longer depends on it.
+- The checkout funnel definition states how this period is handled, given that no `view_cart` rows were received from Nov 1, 2020 to Jan 31, 2021.

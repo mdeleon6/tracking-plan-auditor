@@ -86,13 +86,13 @@ def describe_field_gaps(gaps: pd.DataFrame, uses: dict[tuple[str, str], str], co
     """Group field gaps into problem descriptions, one per event and coverage rate."""
     problems = []
     for (event_name, rate), rows in gaps.groupby(["event_name", "coverage_rate"]):
-        missing = round((1 - rate) * 100, 4)
-        gap = round((min_coverage - rate) * 100, 4)
+        missing = round((1 - rate) * 100, 1)
+        gap = round((min_coverage - rate) * 100, 1)
         lines = [
             f"Check: required field coverage. A field is flagged when coverage is below {min_coverage}.",
             f"Event: {event_name}",
             f"Share of events or products missing each field: {missing}%. Gap to threshold: {gap} percentage points.",
-            f"Flagged fields, all with coverage_rate {round(rate, 6)}:",
+            f"Flagged fields, all with coverage {round(rate * 100, 1)}%:",
         ]
         if period is not None:
             lines.insert(1, f"Data period: {period}.")
@@ -333,9 +333,12 @@ def describe_low_days_together(
     events = sorted(together["event_name"].unique())
     high_events = [event for event in events if severities.get(event) == "high"]
     high_uses = "; ".join(f"{event}: {uses[event]}" for event in high_events if event in uses)
+    day_counts = together.groupby("event_name")["event_date"].nunique()
+    counts_text = ", ".join(f"{event} {count}" for event, count in day_counts.items())
     lines = [
         f"Check: low volume across many events. A day is listed when at least {min_events} events are each below {min_ratio} of their typical count, meaning the median for that weekday.",
         "Event: multiple events",
+        f"Days each affected event was below threshold, out of the days listed: {counts_text}.",
         f"Days listed: {together['event_date'].nunique()}. Different events affected: {len(events)}.",
         f"Affected events rated High in the tracking plan if they stopped arriving entirely: {', '.join(high_events) or 'none'}.",
         f"What the High-rated events are used in, according to the tracking plan: {high_uses or 'none'}.",
