@@ -2,6 +2,8 @@
 
 Catches broken analytics tracking before it reaches dashboards.
 
+**Live demo:** [tracking-plan-auditor.streamlit.app](https://tracking-plan-auditor.streamlit.app/), showing a saved run on the GA4 sample. Clone the repo to audit your own data.
+
 **Status:** In progress. Manual audit complete; automated checks, AI ticket drafting and a Streamlit app working. Support for other data layouts planned.
 
 ## The problem
@@ -46,7 +48,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Checks that each `event_params` field arrives as the type the plan sets, text or number, and lists the days when it didn't, including days when both types arrived (e.g. purchase `transaction_id` arrived as a number on 456 of 537 purchases on Nov 1–12, 2020, with both types on Nov 11–12)
 - Checks event dependencies from the plan (e.g. select_item can't outnumber view_item_list), using GA4 funnel defaults the analyst can edit. Works for web and apps alike
 - Flags events where most records with products carry the same product count above 1 (e.g. 90.7% of add_to_cart records carry exactly 12, and none carry more). Single-product records are ignored, since one item is normal
-- A Streamlit app with three pages. Setup edits the table, dates and billing project, and replaces tracking plan files after checking each has the columns the audit reads. Results shows every check in tabs. Tickets drafts one ticket at a time with Claude, shows the severity and unsupported-number checks above each draft, and downloads it as Markdown. Each draft is a paid API call, so nothing is drafted until you ask
+- A Streamlit app with three pages. Setup edits the table, dates and billing project, and replaces tracking plan files after checking each has the columns the audit reads. Results shows every check in tabs. Tickets drafts one ticket at a time with Claude, shows the severity and unsupported-number checks above each draft, and downloads it as Markdown. Each draft is a paid API call, so nothing is drafted until you ask. The live demo shows a saved run and saved drafts, so it needs no BigQuery login or API key
 
 **Planned**
 - Run the daily and co-missing checks on every event from the plan, not only purchase and add_to_cart (their SQL is already built from the plan)
