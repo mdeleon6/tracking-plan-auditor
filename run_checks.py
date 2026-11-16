@@ -120,12 +120,12 @@ def run_type_check() -> pd.DataFrame:
     return find_type_mismatches(counts, rows)
 
 
-def run_dependency_check() -> pd.DataFrame:
+def run_dependency_check(daily: pd.DataFrame) -> pd.DataFrame:
     """Find events that fired more often than the event they require."""
     dependencies = load_dependencies()
     if dependencies is None:
         return pd.DataFrame(columns=["event_name", "requires", "reason", "event_count", "required_count"])
-    return find_dependency_breaks(daily_event_counts(), dependencies)
+    return find_dependency_breaks(daily, dependencies)
 
 
 def run_item_count_check() -> tuple[pd.DataFrame, set[str]]:
@@ -134,18 +134,9 @@ def run_item_count_check() -> tuple[pd.DataFrame, set[str]]:
     return find_repeated_item_counts(counts), set(counts["event_name"])
 
 
-def run_volume_check() -> dict[str, set[str]]:
-    """Find the days each event did not appear on in BigQuery."""
-    return find_missing_days(daily_event_counts())
-
-
-def run_low_day_check() -> pd.DataFrame:
-    """Find days each event was far below its typical weekday count in BigQuery."""
-    return find_low_days(daily_event_counts())
-
-
 def run_all_checks() -> dict:
     """Run every check and return the results together."""
+    daily = daily_event_counts()
     repeated, checked = run_item_count_check()
     return {
         "events": run_event_check(),
@@ -154,11 +145,12 @@ def run_all_checks() -> dict:
         "coverage_drops": run_coverage_drop_check(),
         "coverage_shifts": run_coverage_shift_check(),
         "type_mismatches": run_type_check(),
-        "dependency_breaks": run_dependency_check(),
+        "dependency_breaks": run_dependency_check(daily),
         "repeated_item_counts": repeated,
         "item_count_events_checked": checked,
-        "missing_days": run_volume_check(),
-        "low_days": run_low_day_check(),
+        "daily_event_counts": daily,
+        "missing_days": find_missing_days(daily),
+        "low_days": find_low_days(daily),
     }
 
 

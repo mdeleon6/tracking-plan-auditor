@@ -7,7 +7,7 @@ import anthropic
 import pandas as pd
 
 from bq import load_settings
-from checks import find_low_days, find_missing_days, split_low_days
+from checks import split_low_days
 from describe import (
     describe_dependency_breaks,
     describe_event_audit,
@@ -20,17 +20,7 @@ from describe import (
     format_stretch,
 )
 from plan import load_event_severities, load_event_uses, load_field_uses, load_holidays
-from run_checks import (
-    daily_event_counts,
-    run_co_missing_check,
-    run_coverage_drop_check,
-    run_coverage_shift_check,
-    run_dependency_check,
-    run_event_check,
-    run_field_check,
-    run_item_count_check,
-    run_type_check,
-)
+from run_checks import run_all_checks
 
 SYSTEM_PROMPT = """
 You write data quality tickets from the results of automated tracking checks. The checks have already run and detected the problem. You do not run anything and you cannot see the underlying data, so you only know what is in the input.
@@ -113,40 +103,6 @@ def save_drafts(problems: list[str], prefix: str, skip: Callable[[str], bool] = 
         print(f"{prefix}{number}", severity, find_unsupported_numbers(ticket, problem))
 
 
-def draft_field_gap_tickets() -> None:
-    """Draft a ticket for each group of required fields below the coverage threshold."""
-    problems = describe_field_gaps(run_field_check(), load_field_uses(), run_co_missing_check(), run_coverage_drop_check(), run_coverage_shift_check(), data_period())
-    # The shipping_tier problem is skipped because finding 003 is the example ticket.
-    save_drafts(problems, "draft_", skip=lambda problem: "- shipping_tier (" in problem)
-
-
-def draft_missing_day_tickets() -> None:
-    """Draft a ticket for each event with days when it stopped arriving."""
-    daily = daily_event_counts()
-    problems = describe_missing_days(find_missing_days(daily), daily, load_event_severities(), load_event_uses())
-    save_drafts(problems, "draft_missing_days_")
-
-
-def draft_low_day_tickets() -> None:
-    """Draft tickets for days far below an event's typical count, grouping days when many events dropped together."""
-    daily = daily_event_counts()
-    severities = load_event_severities()
-    holidays = load_holidays()
-    uses = load_event_uses()
-    together, separate = split_low_days(find_low_days(daily))
-    problems = (
-        describe_low_days_together(together, severities, holidays, uses)
-        + describe_low_days_by_event(separate, together, find_missing_days(daily), severities, holidays, uses)
-    )
-    save_drafts(problems, "draft_low_days_")
-
-
-def draft_dependency_tickets() -> None:
-    """Draft a ticket for each event that outnumbers the event it depends on."""
-    problems = describe_dependency_breaks(run_dependency_check(), load_event_uses())
-    save_drafts(problems, "draft_dependency_")
-
-
 def data_period() -> str:
     """Write the period set in settings.toml, like Nov 1, 2020 to Jan 31, 2021."""
     settings = load_settings()
@@ -155,36 +111,56 @@ def data_period() -> str:
     return format_stretch(start, end)
 
 
-def draft_item_count_tickets() -> None:
-    """Draft a ticket for each event where most records carry the same product count."""
-    repeated, checked = run_item_count_check()
-    problems = describe_repeated_item_counts(repeated, load_event_uses(), checked, data_period())
-    save_drafts(problems, "draft_item_count_")
+def describe_all(results: dict) -> dict[str, list[str]]:
+    """Turn every check's results into problem descriptions, grouped by check, without querying BigQuery again."""
+    severities = load_event_severities()
+    event_uses = load_event_uses()
+    field_uses = load_field_uses()
+    holidays = load_holidays()
+    period = data_period()
+    together, separate = split_low_days(results["low_days"])
+    return {
+        "events": describe_event_audit(results["events"], severities, event_uses, period),
+        "field_gaps": describe_field_gaps(
+            results["field_gaps"], field_uses, results["co_missing"],
+            results["coverage_drops"], results["coverage_shifts"], period,
+        ),
+        "type_mismatches": describe_type_mismatches(results["type_mismatches"], field_uses, period),
+        "missing_days": describe_missing_days(results["missing_days"], results["daily_event_counts"], severities, event_uses),
+        "low_days": (
+            describe_low_days_together(together, severities, holidays, event_uses)
+            + describe_low_days_by_event(separate, together, results["missing_days"], severities, holidays, event_uses)
+        ),
+        "dependency_breaks": describe_dependency_breaks(results["dependency_breaks"], event_uses),
+        "repeated_item_counts": describe_repeated_item_counts(
+            results["repeated_item_counts"], event_uses, results["item_count_events_checked"], period,
+        ),
+    }
+
+PREFIXES = {
+    "events": "draft_events_",
+    "field_gaps": "draft_",
+    "type_mismatches": "draft_type_",
+    "missing_days": "draft_missing_days_",
+    "low_days": "draft_low_days_",
+    "dependency_breaks": "draft_dependency_",
+    "repeated_item_counts": "draft_item_count_",
+}
 
 
-def draft_event_tickets() -> None:
-    """Draft tickets for planned events never received, events missing from the plan, and deprecated events still sent."""
-    problems = describe_event_audit(run_event_check(), load_event_severities(), load_event_uses(), data_period())
-    save_drafts(problems, "draft_events_")
-
-
-def draft_type_tickets() -> None:
-    """Draft a ticket for each event_params field that arrived with a different type than the plan sets."""
-    problems = describe_type_mismatches(run_type_check(), load_field_uses(), data_period())
-    save_drafts(problems, "draft_type_")
+def is_example_ticket(problem: str) -> bool:
+    """Skip the shipping_tier problem, because finding 003 is the example ticket for it."""
+    return "- shipping_tier (" in problem
 
 
 def draft_all_tickets() -> None:
-    """Clear old drafts, then draft a ticket for every problem every check found."""
+    """Clear old drafts, run every check once, then draft a ticket for every problem found."""
     for old in OUTPUT_FOLDER.glob("*.md"):
         old.unlink()
-    draft_event_tickets()
-    draft_field_gap_tickets()
-    draft_type_tickets()
-    draft_missing_day_tickets()
-    draft_low_day_tickets()
-    draft_dependency_tickets()
-    draft_item_count_tickets()
+    for check, problems in describe_all(run_all_checks()).items():
+        skip = is_example_ticket if check == "field_gaps" else (lambda problem: False)
+        save_drafts(problems, PREFIXES[check], skip=skip)
+
 
 
 if __name__ == "__main__":
