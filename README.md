@@ -2,7 +2,7 @@
 
 Catches broken analytics tracking before it reaches dashboards.
 
-**Status:** In progress. Manual audit complete; automated checks and AI ticket drafting working. UI and support for other data layouts planned.
+**Status:** In progress. Manual audit complete; automated checks, AI ticket drafting and a Streamlit app working. Support for other data layouts planned.
 
 ## The problem
 When tracking is broken, incorrect data can be presented or unnecessary time can be spent on cleaning the data. The breaking of tracking happens silently, unless you are looking into it you may never see the issue. Through experience I have witnessed this myself, where until an audit was done the extent of how broken the tracking was would never have been realized. 
@@ -46,13 +46,13 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Checks that each `event_params` field arrives as the type the plan sets, text or number, and lists the days when it didn't, including days when both types arrived (e.g. purchase `transaction_id` arrived as a number on 456 of 537 purchases on Nov 1–12, 2020, with both types on Nov 11–12)
 - Checks event dependencies from the plan (e.g. select_item can't outnumber view_item_list), using GA4 funnel defaults the analyst can edit. Works for web and apps alike
 - Flags events where most records with products carry the same product count above 1 (e.g. 90.7% of add_to_cart records carry exactly 12, and none carry more). Single-product records are ignored, since one item is normal
+- A Streamlit app with three pages. Setup edits the table, dates and billing project, and replaces tracking plan files after checking each has the columns the audit reads. Results shows every check in tabs. Tickets drafts one ticket at a time with Claude, shows the severity and unsupported-number checks above each draft, and downloads it as Markdown. Each draft is a paid API call, so nothing is drafted until you ask
 
 **Planned**
 - Run the daily and co-missing checks on every event from the plan, not only purchase and add_to_cart (their SQL is already built from the plan)
 - Move the check thresholds (e.g. 10 points, 7 days) into `settings.toml`
 - A step-by-step guide for running the audit on your own GA4 export and tracking plan
 - Extend planted bugs testing to the field checks
-- A Streamlit app to run the checks and review Claude's drafts in one place
 - Support for data stored as one table per event, not only GA4's single shared table
 
 ## How well it works
@@ -74,6 +74,9 @@ Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The
 - `plan.py`: reads the tracking plan files
 - `describe.py`: turns check results into problem descriptions for Claude
 - `ai_tickets.py`: drafts tickets with Claude and flags unsupported numbers
+- `streamlit_app.py`: starts the app and its sidebar
+- `app_pages/`: the Setup, Results and Tickets pages
+- `.streamlit/config.toml`: the app's theme
 
 ## Tech
-SQL (BigQuery), GA4, Python (pandas), pytest, Claude API
+SQL (BigQuery), GA4, Python (pandas), pytest, Claude API, Streamlit
