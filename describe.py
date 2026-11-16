@@ -48,7 +48,6 @@ def describe_missing_days(missing: dict[str, set[str]], daily: pd.DataFrame, sev
 
     complete_events = sorted(set(daily["event_name"]) - set(missing.keys()))
 
-
     problems = []
     for event_name, gaps in missing.items():
         severity = severities.get(event_name, "not rated").capitalize()
@@ -298,7 +297,7 @@ def describe_low_days_by_event(
         for _, row in rows.sort_values("event_date").iterrows():
             percent = round(row["ratio"] * 100, 1)
             lines.append(f"- {format_day_with_holiday(row['event_date'], holidays)}: {row['event_count']} events, typical {row['typical']:g}, {percent}% of typical")
-        
+
         grouped_days = sorted(together[together["event_name"] == event_name]["event_date"])
         if grouped_days:
             days = ", ".join(format_day_with_holiday(d, holidays) for d in grouped_days)

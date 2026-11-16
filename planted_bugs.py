@@ -1,11 +1,14 @@
-import pandas as pd
+"""Test the low-volume check by planting drops in real daily counts and scoring what it catches."""
 from pathlib import Path
-from checks import find_missing_days, find_low_days
+
+import pandas as pd
+
+from checks import find_low_days
 
 
-def plant_outage(daily: pd.DataFrame, event_name:str, dates: set[str]) -> pd.DataFrame:
+def plant_outage(daily: pd.DataFrame, event_name: str, dates: set[str]) -> pd.DataFrame:
     """Delete an event's rows on the given dates."""
-    to_delete =(daily["event_name"] == event_name) & (daily["event_date"].isin(dates))
+    to_delete = (daily["event_name"] == event_name) & (daily["event_date"].isin(dates))
     return daily[~to_delete]
 
 
@@ -43,7 +46,6 @@ if __name__ == "__main__":
         low = find_low_days(broken)
         clean_low = low[low["event_name"].isin(CLEAN_EVENTS)]
 
-        flagged = set(zip(clean_low["event_name"], clean_low["event_date"]))
+        flagged = set(zip(clean_low["event_name"], clean_low["event_date"], strict=True))
         planted = {(event, date) for event in CLEAN_EVENTS for date in DROP_DATES}
         print(fraction, score(planted, flagged))
-

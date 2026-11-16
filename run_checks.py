@@ -1,14 +1,28 @@
 """Run the checks against BigQuery. This is the only part that reads the data, so a new data source replaces this file."""
 from pathlib import Path
+
 import pandas as pd
-from bq import fill_settings, load_sql, run_query, load_settings
-from build_sql import items_coverage_per_product_sql, items_coverage_per_event_sql, daily_coverage_sql, co_missing_sql, value_type_sql
-from checks import (
-    audit_events, find_field_gaps, find_coverage_drops, find_type_mismatches,
-    find_dependency_breaks, find_missing_days, find_low_days, find_repeated_item_counts,
-    find_coverage_shifts
+
+from bq import fill_settings, load_settings, load_sql, run_query
+from build_sql import (
+    co_missing_sql,
+    daily_coverage_sql,
+    items_coverage_per_event_sql,
+    items_coverage_per_product_sql,
+    value_type_sql,
 )
-from plan import load_events_plan, load_field_plan, load_dependencies
+from checks import (
+    audit_events,
+    find_coverage_drops,
+    find_coverage_shifts,
+    find_dependency_breaks,
+    find_field_gaps,
+    find_low_days,
+    find_missing_days,
+    find_repeated_item_counts,
+    find_type_mismatches,
+)
+from plan import load_dependencies, load_events_plan, load_field_plan
 
 QUERIES = Path(__file__).parent / "queries" / "checks"
 
@@ -35,7 +49,7 @@ def items_coverage(plan: pd.DataFrame, measured_per: str) -> pd.DataFrame:
         (plan["location"] == "items") & (plan["required"] == "yes")
         & (plan["status"] == "active") & (plan["measured_per"] == measured_per)
     ]
-    fields = sorted(set(zip(rows["field_name"], rows["type"])))
+    fields = sorted(set(zip(rows["field_name"], rows["type"], strict=True)))
     if not fields:
         return pd.DataFrame(columns=["event_name", "field_name", "coverage_rate", "measured_per"])
     build = items_coverage_per_product_sql if measured_per == "product" else items_coverage_per_event_sql
@@ -72,14 +86,14 @@ def per_event_fields(event: str) -> pd.DataFrame:
 def daily_coverage(event: str) -> pd.DataFrame:
     """Count, per day, the events that sent each required field the plan measures per event."""
     rows = per_event_fields(event)
-    fields = list(zip(rows["event_name"], rows["location"], rows["field_name"], rows["type"]))
+    fields = list(zip(rows["event_name"], rows["location"], rows["field_name"], rows["type"], strict=True))
     return run_query(fill_settings(daily_coverage_sql(fields)))
 
 
 def run_co_missing_check() -> pd.DataFrame:
     """Count purchases missing each pair of required fields."""
     rows = per_event_fields("purchase")
-    fields = list(zip(rows["location"], rows["field_name"], rows["type"]))
+    fields = list(zip(rows["location"], rows["field_name"], rows["type"], strict=True))
     return run_query(fill_settings(co_missing_sql("purchase", fields)))
 
 
@@ -102,7 +116,7 @@ def run_type_check() -> pd.DataFrame:
     """Find days when an event_params field arrived with a different type than the plan sets."""
     plan = load_field_plan()
     rows = plan[(plan["location"] == "event_params") & (plan["status"] == "active")]
-    counts = run_query(fill_settings(value_type_sql(list(zip(rows["event_name"], rows["field_name"])))))
+    counts = run_query(fill_settings(value_type_sql(list(zip(rows["event_name"], rows["field_name"], strict=True)))))
     return find_type_mismatches(counts, rows)
 
 

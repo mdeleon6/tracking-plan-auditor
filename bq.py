@@ -1,7 +1,9 @@
+"""Read the settings and run SQL in BigQuery."""
+import tomllib
 from pathlib import Path
+
 import pandas as pd
 from google.cloud import bigquery
-import tomllib
 
 SETTINGS_PATH = Path(__file__).parent / "settings.toml"
 
@@ -22,7 +24,7 @@ def fill_settings(sql: str) -> str:
 
 def load_sql(path: str | Path) -> str:
     """Load SQL from a file and fill in the table and date range from the settings."""
-    with open(path, "r") as f:
+    with open(path) as f:
         return fill_settings(f.read())
 
 
@@ -41,6 +43,6 @@ if __name__ == "__main__":
     df = run_query(sql)
 
     print(df)
-    
+
     assert len(df) == 17, "Expected 17 event names"
     assert df.iloc[0]["event_name"] == "page_view"

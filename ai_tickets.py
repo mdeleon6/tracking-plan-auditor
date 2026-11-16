@@ -1,24 +1,36 @@
 """Draft tickets with Claude from the problem descriptions, and check the numbers in each draft."""
-from pathlib import Path
-from typing import Callable
 import re
+from collections.abc import Callable
+from pathlib import Path
 
 import anthropic
 import pandas as pd
 
 from bq import load_settings
-from checks import find_missing_days, find_low_days, split_low_days
+from checks import find_low_days, find_missing_days, split_low_days
 from describe import (
-    describe_field_gaps, describe_missing_days, describe_dependency_breaks, describe_event_audit,
-    describe_low_days_by_event, describe_low_days_together, describe_repeated_item_counts, format_stretch,
-    describe_type_mismatches
+    describe_dependency_breaks,
+    describe_event_audit,
+    describe_field_gaps,
+    describe_low_days_by_event,
+    describe_low_days_together,
+    describe_missing_days,
+    describe_repeated_item_counts,
+    describe_type_mismatches,
+    format_stretch,
 )
 from plan import load_event_severities, load_event_uses, load_field_uses, load_holidays
 from run_checks import (
-    daily_event_counts, run_field_check, run_co_missing_check, run_event_check, run_type_check,
-    run_coverage_drop_check, run_dependency_check, run_item_count_check, run_coverage_shift_check
+    daily_event_counts,
+    run_co_missing_check,
+    run_coverage_drop_check,
+    run_coverage_shift_check,
+    run_dependency_check,
+    run_event_check,
+    run_field_check,
+    run_item_count_check,
+    run_type_check,
 )
-
 
 SYSTEM_PROMPT = """
 You write data quality tickets from the results of automated tracking checks. The checks have already run and detected the problem. You do not run anything and you cannot see the underlying data, so you only know what is in the input.
@@ -94,18 +106,21 @@ def save_drafts(problems: list[str], prefix: str, skip: Callable[[str], bool] = 
 
 
 def draft_field_gap_tickets() -> None:
+    """Draft a ticket for each group of required fields below the coverage threshold."""
     problems = describe_field_gaps(run_field_check(), load_field_uses(), run_co_missing_check(), run_coverage_drop_check(), run_coverage_shift_check(), data_period())
     # The shipping_tier problem is skipped because finding 003 is the example ticket.
     save_drafts(problems, "draft_", skip=lambda problem: "- shipping_tier (" in problem)
 
 
 def draft_missing_day_tickets() -> None:
+    """Draft a ticket for each event with days when it stopped arriving."""
     daily = daily_event_counts()
     problems = describe_missing_days(find_missing_days(daily), daily, load_event_severities(), load_event_uses())
     save_drafts(problems, "draft_missing_days_")
 
 
 def draft_low_day_tickets() -> None:
+    """Draft tickets for days far below an event's typical count, grouping days when many events dropped together."""
     daily = daily_event_counts()
     severities = load_event_severities()
     holidays = load_holidays()
@@ -119,6 +134,7 @@ def draft_low_day_tickets() -> None:
 
 
 def draft_dependency_tickets() -> None:
+    """Draft a ticket for each event that outnumbers the event it depends on."""
     problems = describe_dependency_breaks(run_dependency_check(), load_event_uses())
     save_drafts(problems, "draft_dependency_")
 
@@ -132,17 +148,20 @@ def data_period() -> str:
 
 
 def draft_item_count_tickets() -> None:
+    """Draft a ticket for each event where most records carry the same product count."""
     repeated, checked = run_item_count_check()
     problems = describe_repeated_item_counts(repeated, load_event_uses(), checked, data_period())
     save_drafts(problems, "draft_item_count_")
 
 
 def draft_event_tickets() -> None:
+    """Draft tickets for planned events never received, events missing from the plan, and deprecated events still sent."""
     problems = describe_event_audit(run_event_check(), load_event_severities(), load_event_uses(), data_period())
     save_drafts(problems, "draft_events_")
 
 
 def draft_type_tickets() -> None:
+    """Draft a ticket for each event_params field that arrived with a different type than the plan sets."""
     problems = describe_type_mismatches(run_type_check(), load_field_uses(), data_period())
     save_drafts(problems, "draft_type_")
 

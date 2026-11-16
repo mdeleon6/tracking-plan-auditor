@@ -1,4 +1,10 @@
-from build_sql import item_present, field_present, daily_coverage_sql, co_missing_sql, value_type_sql
+from build_sql import (
+    co_missing_sql,
+    daily_coverage_sql,
+    field_present,
+    item_present,
+    value_type_sql,
+)
 
 
 def test_item_present_for_text_excludes_not_set():
@@ -45,4 +51,3 @@ def test_value_type_sql_only_counts_planned_pairs():
     assert "(event_name = 'purchase' AND param.key = 'transaction_id') OR (event_name = 'add_to_cart' AND param.key = 'ga_session_id')" in sql
     assert "COUNTIF(param.value.string_value IS NOT NULL) AS text_values" in sql
     assert sql.endswith("GROUP BY event_date, event_name, field_name")
-

@@ -1,7 +1,35 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts, find_coverage_shifts, find_type_mismatches
-from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts, describe_coverage_shifts, describe_event_audit, describe_type_mismatches
-from ai_tickets import find_unsupported_numbers
 import pandas as pd
+
+from ai_tickets import find_unsupported_numbers
+from checks import (
+    audit_events,
+    compare_events,
+    daily_field_coverage,
+    find_coverage_drops,
+    find_coverage_shifts,
+    find_dependency_breaks,
+    find_deprecated_events,
+    find_field_gaps,
+    find_low_days,
+    find_missing_days,
+    find_repeated_item_counts,
+    find_type_mismatches,
+    split_low_days,
+)
+from describe import (
+    describe_coverage_drops,
+    describe_coverage_shifts,
+    describe_dependency_breaks,
+    describe_event_audit,
+    describe_field_gaps,
+    describe_low_days_by_event,
+    describe_low_days_together,
+    describe_missing_days,
+    describe_repeated_item_counts,
+    describe_type_mismatches,
+    format_day_with_holiday,
+    group_consecutive_dates,
+)
 
 
 def test_finds_missing_and_unplanned_events():
@@ -22,21 +50,21 @@ def test_nothing_observed():
     result = compare_events({"a", "b"}, set())
     assert result["missing_in_data"] == {"a", "b"}
     assert result["not_in_plan"] == set()
-    
-    
+
+
 def test_deprecated_event_still_firing():
     deprecated = {"event1", "event2"}
     observed = {"event2", "event3"}
     result = find_deprecated_events(deprecated, observed)
     assert result == {"event2"}
-    
-    
+
+
 def test_deprecated_event_stopped():
     deprecated = {"event1", "event2"}
     observed = {"event3", "event4"}
     result = find_deprecated_events(deprecated, observed)
     assert result == set()
-    
+
 
 def test_deprecated_event_is_only_reported_once():
     plan = pd.DataFrame({
@@ -44,12 +72,12 @@ def test_deprecated_event_is_only_reported_once():
         "status": ["active", "deprecated"],
     })
     observed = {"page_view", "old_event"}
-    
+
     result = audit_events(plan, observed)
     assert result["deprecated_still_firing"] == {"old_event"}
     assert result["not_in_plan"] == set()
-    
-    
+
+
 def test_field_gaps_finds_low_and_missing_fields():
     required = pd.DataFrame({
         "event_name": ["purchase", "purchase", "purchase"],
@@ -78,7 +106,7 @@ def test_finds_days_an_event_is_missing():
     result = find_missing_days(daily)
 
     assert result == {"add_to_cart": {"20201102"}}
-    
+
 
 def test_finds_low_days_compared_with_same_weekday():
     daily = pd.DataFrame({
@@ -93,8 +121,8 @@ def test_finds_low_days_compared_with_same_weekday():
     low = find_low_days(daily)
 
     assert set(low["event_date"]) == {"20201115"}
-    
-    
+
+
 def test_groups_fields_with_same_event_and_rate():
     gaps = pd.DataFrame({
         "event_name": ["purchase", "purchase", "purchase"],
@@ -238,7 +266,6 @@ def test_describes_low_days_for_one_event():
     assert "covered in a separate missing-day ticket" in problem
 
 
-
 def test_describes_days_when_many_events_drop_together():
     together = pd.DataFrame({
         "event_date": ["20201224", "20201224", "20201225"],
@@ -297,8 +324,8 @@ def test_daily_field_coverage():
     daily = daily_field_coverage(counts, "shipping_tier")
 
     assert list(daily["coverage"]) == [1.0, 0.5]
-    
-    
+
+
 def test_coverage_drops_skip_days_below_minimum():
     counts = pd.DataFrame({
         "event_date": ["20210101", "20210102", "20210103", "20210104"],
@@ -324,6 +351,7 @@ def test_describes_coverage_drops_as_stretches():
     lines = describe_coverage_drops(drops, "purchase", {"value"})
 
     assert "- value (typical daily coverage 95.0%, 22 missing records on these days): Jan 26, 2021 to Jan 27, 2021: 3 of 20 (15.0%); Jan 30, 2021: 0 of 5 (0.0%)" in lines
+
 
 def test_flags_event_firing_more_than_the_event_it_requires():
     daily = pd.DataFrame({
@@ -448,6 +476,7 @@ def test_type_mismatches_flag_values_sent_as_the_wrong_type():
 
     assert list(mismatches["event_date"]) == ["20201201", "20201203"]
     assert list(mismatches["wrong_type"]) == [2, 5]
+
 
 def test_describes_type_mismatches_with_stretches_and_mixed_days():
     mismatches = pd.DataFrame({
