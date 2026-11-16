@@ -2,13 +2,13 @@
 import pandas as pd
 import streamlit as st
 
-from run_checks import run_all_checks
+from run_checks import DEMO, load_snapshot, run_all_checks
 
 
 @st.cache_data(ttl="1h", show_spinner="Running the checks in BigQuery...")
 def load_results() -> dict:
-    """Run every check once and reuse the results for an hour."""
-    return run_all_checks()
+    """Run every check once and reuse the results for an hour, or load the saved run in the demo."""
+    return load_snapshot() if DEMO else run_all_checks()
 
 
 def with_dates(table: pd.DataFrame) -> pd.DataFrame:
@@ -17,6 +17,8 @@ def with_dates(table: pd.DataFrame) -> pd.DataFrame:
 
 
 st.title("Results")
+if DEMO:
+    st.info("Demo: a saved run on Google's public GA4 sample, Nov 1, 2020 to Jan 31, 2021.", icon=":material/info:")
 if st.button("Run audit", type="primary", icon=":material/play_arrow:"):
     st.session_state["results"] = load_results()
     st.session_state.pop("drafts", None)

@@ -4,11 +4,14 @@ import re
 import streamlit as st
 
 from ai_tickets import (
+    OUTPUT_FOLDER,
+    PREFIXES,
     describe_all,
     draft_ticket,
     find_severity,
     find_unsupported_numbers,
 )
+from run_checks import DEMO
 
 LABELS = {
     "events": "Events",
@@ -41,7 +44,13 @@ for number, problem in enumerate(problems[check], start=1):
     key = f"{check}_{number}"
     with st.expander(f"Problem {number}"):
         st.code(problem, language=None, wrap_lines=True)
-        if st.button("Draft ticket", key=f"draft_{key}", icon=":material/edit_note:"):
+        if DEMO:
+            saved = OUTPUT_FOLDER / f"{PREFIXES[check]}{number}.md"
+            if saved.exists():
+                drafts[key] = saved.read_text(encoding="utf-8")
+            else:
+                st.caption("No saved draft for this problem in the demo.")
+        elif st.button("Draft ticket", key=f"draft_{key}", icon=":material/edit_note:"):
             with st.spinner("Claude is drafting the ticket..."):
                 drafts[key] = draft_ticket(problem)
         if key in drafts:

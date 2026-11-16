@@ -48,12 +48,12 @@ You will be given an example ticket inside <example_ticket> tags. Copy its secti
 In the ticket, call the information you were given "the check results". Never write "the input".
 """
 
-client = anthropic.Anthropic()
 OUTPUT_FOLDER = Path(__file__).parent / "ai_drafts"
 
 
 def draft_ticket(problem: str) -> str:
     """Ask Claude to draft a ticket for one detected problem."""
+    client = anthropic.Anthropic()
     example_path = Path(__file__).parent / "findings" / "003-purchase-missing-shipping-tier.md"
     example = example_path.read_text(encoding="utf-8")
     user_message = (

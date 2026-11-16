@@ -6,6 +6,7 @@ import streamlit as st
 
 from bq import SETTINGS_PATH, load_settings
 from plan import PLAN_DIR
+from run_checks import DEMO
 
 SETTINGS_TEMPLATE = """# Where the auditor reads data from. Change these to point at another GA4 export.
 billing_project = "{billing_project}"
@@ -39,6 +40,8 @@ def forget_results() -> None:
 
 
 st.title("Setup")
+if DEMO:
+    st.info("Demo: settings and the tracking plan are read-only. Clone the repo to audit your own GA4 export.", icon=":material/lock:")
 settings = load_settings()
 
 with st.form("settings"):
@@ -47,7 +50,7 @@ with st.form("settings"):
     billing_project = st.text_input("Billing project", value=settings["billing_project"], help="The Google Cloud project charged for the queries.")
     dates = st.date_input("Dates to audit", value=(to_date(settings["start_date"]), to_date(settings["end_date"])))
     min_records = st.number_input("Skip days with fewer records than", min_value=1, value=settings["min_records_per_day"])
-    saved = st.form_submit_button("Save settings", type="primary", icon=":material/save:")
+    saved = st.form_submit_button("Save settings", type="primary", icon=":material/save:", disabled=DEMO)
 
 
 if saved:
@@ -79,7 +82,7 @@ plan_files = {
 for tab, file_name in zip(st.tabs(list(plan_files)), plan_files.values(), strict=True):
     with tab:
         path = PLAN_DIR / file_name
-        upload = st.file_uploader(f"Replace {file_name}", type="csv", key=f"upload_{file_name}")
+        upload = None if DEMO else st.file_uploader(f"Replace {file_name}", type="csv", key=f"upload_{file_name}")
         if upload is not None:
             missing = REQUIRED_COLUMNS[file_name] - set(pd.read_csv(upload).columns)
             if missing:

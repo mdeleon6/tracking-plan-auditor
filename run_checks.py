@@ -1,4 +1,7 @@
 """Run the checks against BigQuery. This is the only part that reads the data, so a new data source replaces this file."""
+import os
+import pickle
+import sys
 from pathlib import Path
 
 import pandas as pd
@@ -25,6 +28,8 @@ from checks import (
 from plan import load_dependencies, load_events_plan, load_field_plan
 
 QUERIES = Path(__file__).parent / "queries" / "checks"
+SNAPSHOT = Path(__file__).parent / "demo" / "results.pkl"
+DEMO = os.environ.get("AUDITOR_DEMO") == "1"
 
 
 def query(name: str) -> pd.DataFrame:
@@ -154,6 +159,19 @@ def run_all_checks() -> dict:
     }
 
 
+def save_snapshot(results: dict) -> None:
+    """Save the results so the demo app can show them without BigQuery."""
+    SNAPSHOT.parent.mkdir(exist_ok=True)
+    with open(SNAPSHOT, "wb") as f:
+        pickle.dump(results, f)
+
+
+def load_snapshot() -> dict:
+    """Load the results saved for the demo app."""
+    with open(SNAPSHOT, "rb") as f:
+        return pickle.load(f)
+
+
 if __name__ == "__main__":
     results = run_all_checks()
     print("Planned events never received:", sorted(results["events"]["missing_in_data"]))
@@ -168,3 +186,5 @@ if __name__ == "__main__":
     print("Events with repeated product counts:", sorted(results["repeated_item_counts"]["event_name"]))
     print("Missing days:", {event: len(days) for event, days in results["missing_days"].items()})
     print("Low days:", len(results["low_days"]))
+    if "--snapshot" in sys.argv:
+        save_snapshot(results)
