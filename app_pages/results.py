@@ -19,6 +19,7 @@ def with_dates(table: pd.DataFrame) -> pd.DataFrame:
 st.title("Results")
 if st.button("Run audit", type="primary", icon=":material/play_arrow:"):
     st.session_state["results"] = load_results()
+    st.session_state.pop("drafts", None)
 
 if "results" not in st.session_state:
     st.info("Run the audit to see results.")
