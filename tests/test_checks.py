@@ -1,4 +1,4 @@
-from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, find_co_missing, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts, find_coverage_shifts
+from checks import compare_events, find_deprecated_events, audit_events, find_field_gaps, find_missing_days, find_low_days, daily_field_coverage, find_coverage_drops, find_dependency_breaks, split_low_days, find_repeated_item_counts, find_coverage_shifts
 from describe import describe_field_gaps, group_consecutive_dates, describe_missing_days, describe_low_days_by_event, describe_low_days_together, format_day_with_holiday, describe_coverage_drops, describe_dependency_breaks, describe_repeated_item_counts, describe_coverage_shifts, describe_event_audit
 from ai_tickets import find_unsupported_numbers
 import pandas as pd
@@ -265,45 +265,31 @@ def test_field_gaps_uses_the_plans_measurement():
     gaps = find_field_gaps(required, coverage)
 
     assert list(gaps["coverage_rate"]) == [0.64]
-    
-    
-def test_counts_records_missing_two_fields_together():
-    records = pd.DataFrame({
-        "keys": [
-            ["transaction_id", "shipping_tier"],
-            ["shipping_tier"],
-            [],
-            ["transaction_id"],
-        ],
-    })
-
-    result = find_co_missing(records, ["transaction_id", "shipping_tier"])
-    row = result.iloc[0]
-
-    assert row["missing_a"] == 2
-    assert row["missing_b"] == 2
-    assert row["missing_both"] == 1
 
 
 def test_daily_field_coverage():
-    records = pd.DataFrame({
-        "event_date": ["20210125", "20210125", "20210126", "20210126"],
-        "keys": [["shipping_tier"], ["shipping_tier"], ["shipping_tier"], []],
+    counts = pd.DataFrame({
+        "event_date": ["20210126", "20210125", "20210125"],
+        "field_name": ["shipping_tier", "shipping_tier", "value"],
+        "present": [1, 2, 0],
+        "total": [2, 2, 2],
     })
 
-    daily = daily_field_coverage(records, "shipping_tier")
+    daily = daily_field_coverage(counts, "shipping_tier")
 
     assert list(daily["coverage"]) == [1.0, 0.5]
     
     
 def test_coverage_drops_skip_days_below_minimum():
-    records = pd.DataFrame({
-        "event_date": ["20210101"] * 4 + ["20210102"] * 4 + ["20210103"] * 4 + ["20210104"],
-        "keys": [["x"]] * 12 + [[]],
+    counts = pd.DataFrame({
+        "event_date": ["20210101", "20210102", "20210103", "20210104"],
+        "field_name": ["x"] * 4,
+        "present": [4, 4, 4, 0],
+        "total": [4, 4, 4, 1],
     })
 
-    assert len(find_coverage_drops(records, ["x"])) == 1
-    assert len(find_coverage_drops(records, ["x"], min_records=2)) == 0
+    assert len(find_coverage_drops(counts, ["x"])) == 1
+    assert len(find_coverage_drops(counts, ["x"], min_records=2)) == 0
 
 
 def test_describes_coverage_drops_as_stretches():
@@ -381,14 +367,14 @@ def test_describes_repeated_item_counts():
 
 
 def test_coverage_shifts_flag_the_start_of_a_lasting_drop():
-    records = pd.DataFrame({
-        "event_date": ["20201201", "20201201", "20201202", "20201202", "20201203", "20201203",
-                       "20201204", "20201204", "20201205", "20201205"],
-        "keys": [["quantity"], ["quantity"], ["quantity"], ["quantity"], ["quantity"], [],
-                 ["quantity"], [], ["quantity"], []],
+    counts = pd.DataFrame({
+        "event_date": ["20201201", "20201202", "20201203", "20201204", "20201205"],
+        "field_name": ["quantity"] * 5,
+        "present": [2, 2, 1, 1, 1],
+        "total": [2, 2, 2, 2, 2],
     })
 
-    shifts = find_coverage_shifts(records, ["quantity"], window=2)
+    shifts = find_coverage_shifts(counts, ["quantity"], window=2)
 
     assert list(shifts["event_date"]) == ["20201203", "20201204"]
 

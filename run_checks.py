@@ -2,13 +2,13 @@
 from pathlib import Path
 import pandas as pd
 from bq import fill_settings, load_sql, run_query, load_settings
-from build_sql import items_coverage_per_product_sql, items_coverage_per_event_sql
+from build_sql import items_coverage_per_product_sql, items_coverage_per_event_sql, daily_coverage_sql, co_missing_sql
 from checks import (
-    audit_events, find_field_gaps, find_co_missing, find_coverage_drops,
+    audit_events, find_field_gaps, find_coverage_drops,
     find_dependency_breaks, find_missing_days, find_low_days, find_repeated_item_counts,
     find_coverage_shifts
 )
-from plan import load_events_plan, load_field_plan, required_fields, load_dependencies
+from plan import load_events_plan, load_field_plan, load_dependencies
 
 QUERIES = Path(__file__).parent / "queries" / "checks"
 
@@ -60,26 +60,42 @@ def run_field_check() -> pd.DataFrame:
     return find_field_gaps(required, coverage)
 
 
+def per_event_fields(event: str) -> pd.DataFrame:
+    """Return the plan's required, active fields for one event that are measured per event."""
+    plan = load_field_plan()
+    return plan[
+        (plan["event_name"] == event) & (plan["required"] == "yes") & (plan["status"] == "active")
+        & (plan["measured_per"] == "event") & (plan["location"].isin(["event_params", "ecommerce", "items"]))
+    ]
+
+
+def daily_coverage(event: str) -> pd.DataFrame:
+    """Count, per day, the events that sent each required field the plan measures per event."""
+    rows = per_event_fields(event)
+    fields = list(zip(rows["event_name"], rows["location"], rows["field_name"], rows["type"]))
+    return run_query(fill_settings(daily_coverage_sql(fields)))
+
+
 def run_co_missing_check() -> pd.DataFrame:
-    """Count purchases missing each pair of required event_params fields."""
-    records = query("purchase_field_keys.sql")
-    fields = required_fields("purchase", "event_params") + required_fields("purchase", "ecommerce")
-    return find_co_missing(records, fields).assign(event_name="purchase")
+    """Count purchases missing each pair of required fields."""
+    rows = per_event_fields("purchase")
+    fields = list(zip(rows["location"], rows["field_name"], rows["type"]))
+    return run_query(fill_settings(co_missing_sql("purchase", fields)))
 
 
 def run_coverage_drop_check() -> pd.DataFrame:
     """Find days when a required purchase field's coverage dropped well below normal."""
-    records = query("purchase_field_keys.sql")
-    fields = required_fields("purchase", "event_params") + required_fields("purchase", "ecommerce")
+    counts = daily_coverage("purchase")
+    fields = per_event_fields("purchase")["field_name"].tolist()
     min_records = load_settings()["min_records_per_day"]
-    return find_coverage_drops(records, fields, min_records=min_records).assign(event_name="purchase")
+    return find_coverage_drops(counts, fields, min_records=min_records).assign(event_name="purchase")
 
 
 def run_coverage_shift_check() -> pd.DataFrame:
     """Find days when add_to_cart quantity coverage fell well below the week before."""
-    records = query("items_quantity_keys.sql")
+    counts = daily_coverage("add_to_cart")
     min_records = load_settings()["min_records_per_day"]
-    return find_coverage_shifts(records, ["quantity"], min_records=min_records).assign(event_name="add_to_cart")
+    return find_coverage_shifts(counts, ["quantity"], min_records=min_records).assign(event_name="add_to_cart")
 
 
 def run_dependency_check() -> pd.DataFrame:

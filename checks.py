@@ -1,5 +1,4 @@
 """The checks themselves: pure functions on data that is already loaded. No BigQuery here."""
-from itertools import combinations
 import pandas as pd
 
 
@@ -39,48 +38,29 @@ def find_field_gaps(
     return merged[merged["coverage_rate"] < min_coverage]
 
 
-def find_co_missing(records: pd.DataFrame, fields: list[str]) -> pd.DataFrame:
-    """For each pair of fields, count records missing one, the other, and both."""
-    missing = pd.DataFrame({
-        field: records["keys"].apply(lambda keys: field not in keys)
-        for field in fields
-    })
-    rows = []
-    for a, b in combinations(fields, 2):
-        rows.append({
-            "field_a": a,
-            "field_b": b,
-            "missing_a": int(missing[a].sum()),
-            "missing_b": int(missing[b].sum()),
-            "missing_both": int((missing[a] & missing[b]).sum()),
-        })
-    return pd.DataFrame(rows)
-
-
-def daily_field_coverage(records: pd.DataFrame, field: str) -> pd.DataFrame:
-    """Return each day's count of records with the field, total records, and coverage."""
-    has_field = records["keys"].apply(lambda keys: field in keys)
-    daily = has_field.groupby(records["event_date"]).agg(present="sum", total="count")
+def daily_field_coverage(counts: pd.DataFrame, field: str) -> pd.DataFrame:
+    """Return each day's count of events with the field, total events, and coverage, from the daily coverage table."""
+    daily = counts[counts["field_name"] == field][["event_date", "present", "total"]].sort_values("event_date")
     daily["coverage"] = daily["present"] / daily["total"]
-    return daily.reset_index()
+    return daily.reset_index(drop=True)
 
 
-def find_coverage_drops(records: pd.DataFrame, fields: list[str], max_drop: float = 0.10, min_records: int = 1) -> pd.DataFrame:
+def find_coverage_drops(counts: pd.DataFrame, fields: list[str], max_drop: float = 0.10, min_records: int = 1) -> pd.DataFrame:
     """Return days when a field's coverage is more than max_drop below its typical daily coverage."""
     drops = []
     for field in fields:
-        daily = daily_field_coverage(records, field)
+        daily = daily_field_coverage(counts, field)
         typical = daily["coverage"].median()
         low = daily[(daily["total"] >= min_records) & (daily["coverage"] < typical - max_drop)]
         drops.append(low.assign(field_name=field, typical=typical))
     return pd.concat(drops, ignore_index=True)
 
 
-def find_coverage_shifts(records: pd.DataFrame, fields: list[str], window: int = 7, max_drop: float = 0.10, min_records: int = 1) -> pd.DataFrame:
+def find_coverage_shifts(counts: pd.DataFrame, fields: list[str], window: int = 7, max_drop: float = 0.10, min_records: int = 1) -> pd.DataFrame:
     """Return days when a field's coverage is more than max_drop below its median over the previous window days."""
     shifts = []
     for field in fields:
-        daily = daily_field_coverage(records, field)
+        daily = daily_field_coverage(counts, field)
         daily["before"] = daily["coverage"].shift(1).rolling(window, min_periods=window).median()
         daily["after"] = daily["coverage"].shift(-1)
         low = daily[(daily["total"] >= min_records) & (daily["coverage"] < daily["before"] - max_drop)]

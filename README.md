@@ -29,6 +29,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 
 ## How it works
 **Working now**
+- Counts inside the database and downloads only totals (e.g. how many purchases sent each field on each day), never individual events. This keeps downloads small on large exports, and no user-level data leaves the warehouse
 - Compares the tracking plan with the data: planned events that never arrive, events missing from the plan, and deprecated events still being sent. Each becomes a ticket, using the plan's severity rating (e.g. `refund` never arrived: High, because net revenue depends on it)
 - Checks that required `event_params`, `items` and `ecommerce` fields, plus country, device and platform, are present on at least 99% of their events or products. The plan sets how each field is measured, so a field expected on one product per event (e.g. add_to_cart `quantity`) is checked per event
 - Finds the days an event stopped arriving entirely
@@ -45,7 +46,7 @@ Full write-ups: [`view_item_list`](findings/001-view-item-list.md), [`purchase`]
 - Flags events where most records with products carry the same product count above 1 (e.g. 90.7% of add_to_cart records carry exactly 12, and none carry more). Single-product records are ignored, since one item is normal
 
 **Planned**
-- Run the daily and co-missing checks on every event from the plan, not only purchase and add_to_cart (items fields are already built from the plan)
+- Run the daily and co-missing checks on every event from the plan, not only purchase and add_to_cart (their SQL is already built from the plan)
 - Warn when a required field never appears in the data, instead of reporting 0% coverage
 - Move the check thresholds (e.g. 10 points, 7 days) into `settings.toml`
 - A step-by-step guide for running the audit on your own GA4 export and tracking plan
@@ -68,7 +69,7 @@ Tested by planting bugs in real daily counts (9 per size, 3 healthy events). The
 - `ai_drafts/`: sample tickets drafted by Claude from real check results
 - `settings.toml`: which GA4 export and date range to audit, and the project billed for queries
 - `checks.py`: the checks, as pure functions with no BigQuery
-- `build_sql.py`: writes SQL from the tracking plan (items fields today), so new plan fields are checked without editing queries
+- `build_sql.py`: writes SQL from the tracking plan (items coverage, daily coverage and co-missing counts), so new plan fields are checked without editing queries
 - `run_checks.py`: runs the checks on BigQuery (the part a new data source replaces)
 - `plan.py`: reads the tracking plan files
 - `describe.py`: turns check results into problem descriptions for Claude

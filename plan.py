@@ -15,17 +15,6 @@ def load_field_plan() -> pd.DataFrame:
     return pd.read_csv(PLAN_DIR / "event_fields.csv")
 
 
-def required_fields(event_name: str, location: str) -> list[str]:
-    """Return the active required fields the plan lists for one event and location."""
-    plan = load_field_plan()
-    return plan[
-        (plan["event_name"] == event_name)
-        & (plan["location"] == location)
-        & (plan["required"] == "yes")
-        & (plan["status"] == "active")
-    ]["field_name"].tolist()
-
-
 def load_dependencies() -> pd.DataFrame | None:
     """Read the event dependencies, or return None if the plan has none."""
     path = PLAN_DIR / "event_dependencies.csv"
